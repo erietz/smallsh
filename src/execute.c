@@ -36,8 +36,6 @@ int run_external_cmd(Args* args) {
     int child_status;
     pid_t spawn_pid;
 
-    print_args(args);
-
     for (int i = 0; i < args->size; i++) {
         argv[i] = args->items[i];
     }
