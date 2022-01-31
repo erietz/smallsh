@@ -8,37 +8,38 @@
 
 typedef struct Args {
     int size;
-    char *items[MAX_ARGS];
+    char items[MAX_ARGS][MAX_CHARS];
 } Args;
 
 
-void read_input(char* user_input) {
-    char *tmp;
+void read_input(char* input_buffer) {
+    char *raw_input;
 
-    memset(user_input, '\0', MAX_CHARS*sizeof(char));
+    memset(input_buffer, '\0', MAX_CHARS*sizeof(char));
     printf(PROMPT);
-    tmp = fgets(user_input, MAX_CHARS, stdin);    // TODO: cannot read passed \n char
-    if (tmp == NULL) {
-        puts("something bad happened");
+    raw_input = fgets(input_buffer, MAX_CHARS, stdin);    // TODO: cannot read passed \n char
+
+    if (raw_input == NULL) {
+        puts("Error with fgets or EOF");
     }
 }
 
-Args* parse_input(char* user_input) {
-    char *token, *current_arg;
-    Args *args = malloc(sizeof(Args));
+void parse_input(char* input_buffer, Args* args) {
+    char *token;
+    /* char *current_arg; */
     args->size = 0;
-    args->items[0] = "";
 
-    token = strtok(user_input, " \n");
-    current_arg = strdup(token);
-    args->items[args->size] = current_arg;
+    token = strtok(input_buffer, " \n");
+    /* current_arg = strdup(token); */
+    strcpy(args->items[args->size], token);
     args->size += 1;
 
     while (token != NULL) {
         token = strtok(NULL, " \n");
         if (token != NULL) {
-            current_arg = strdup(token);
-            args->items[args->size] = current_arg;
+            /* current_arg = strdup(token); */
+            /* args->items[args->size] = current_arg; */
+            strcpy(args->items[args->size], token);
             args->size += 1;
         }
     }
@@ -50,7 +51,6 @@ Args* parse_input(char* user_input) {
     /*     current_arg[len - 1] = '\0'; */
     /* } */
 
-    return args;
 }
 
 void print_args(Args* args) {
@@ -64,19 +64,20 @@ void free_args(Args* args) {
         free(args->items[i]);
     }
     /* free(args->items); */
-    free(args);
+    /* free(args); */
 }
 
 int main(int argc, char *argv[]) {
-    char user_input[MAX_CHARS];
-    Args *args;
+    char input_buffer[MAX_CHARS];
+    Args args;
+    args.size = 0;
 
     while (1) {
-        read_input(user_input);
-        args = parse_input(user_input);
-        printf("size %i\n", args->size);
-        print_args(args);
-        free_args(args);
+        read_input(input_buffer);
+        parse_input(input_buffer, &args);
+        printf("size %i\n", args.size);
+        print_args(&args);
+        /* free_args(*args); */
     }
 
     return 0;
