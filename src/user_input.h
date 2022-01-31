@@ -14,7 +14,7 @@ typedef struct Args {
 } Args;
 
 void read_input(char* input_buffer);
-void parse_input(char* input_buffer, Args* args);
+void input_to_args(char* input_buffer, Args* args);
 void print_args(Args* args);
 
 #endif // USER_INPUT_H
