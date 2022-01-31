@@ -74,7 +74,7 @@ clean:
 
 .PHONY: run
 run: $(BIN)
-	@./movies_by_year
+	@./smallsh
 
 .PHONY: submit
 submit:
