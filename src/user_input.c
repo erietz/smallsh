@@ -20,6 +20,16 @@ void parse_input(char* input_buffer, Args* args) {
     args->size = 0;
 
     token = strtok(input_buffer, " \n");
+
+    /* line is blank */
+    if (token == NULL)
+        return;
+
+    /* line is a comment */
+    if (strncmp(token, "#", 1) == 0)
+        return;
+
+    /* line contains arguments */
     strcpy(args->items[args->size], token);
     args->size += 1;
 
