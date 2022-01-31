@@ -1,8 +1,8 @@
 #ifndef BUILTIN_H
 #define BUILTIN_H
 
-void cd(char* path);
+int cd(char* path);
 void status();
-void exit();
+void exit_shell();
 
 #endif // BUILTIN_H

@@ -73,7 +73,7 @@ clean:
 	rm -rf ./test/scratch/*
 
 .PHONY: run
-run: $(BIN)
+run: $(OBJ) $(BIN)
 	@./smallsh
 
 .PHONY: submit
