@@ -15,7 +15,8 @@ typedef struct RawArgs {
 
 typedef struct Command {
     char *file;
-    char args[MAX_ARGS][MAX_CHARS];
+    int argc;
+    char argv[MAX_ARGS][MAX_CHARS];
     char *input;
     char *output;
     int bg;

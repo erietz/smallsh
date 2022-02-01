@@ -20,7 +20,8 @@ void args_to_command_test_cmd_only(){
 
     // ASSERT
     assert_str_equal(cmd.file, "ls");
-    assert_str_equal(cmd.args[0], "ls");
+    assert_int_equal(cmd.argc, 1);
+    assert_str_equal(cmd.argv[0], "ls");
     assert_int_equal(cmd.bg, 0);
 }
 
@@ -42,9 +43,10 @@ void args_to_command_test_cmd_with_args(){
 
     // ASSERT
     assert_str_equal(cmd.file, "ls");
-    assert_str_equal(cmd.args[0], "ls");
-    assert_str_equal(cmd.args[1], "-a");
-    assert_str_equal(cmd.args[2], "-l");
+    assert_int_equal(cmd.argc, 3);
+    assert_str_equal(cmd.argv[0], "ls");
+    assert_str_equal(cmd.argv[1], "-a");
+    assert_str_equal(cmd.argv[2], "-l");
     assert_int_equal(cmd.bg, 0);
 }
 
@@ -65,8 +67,9 @@ void args_to_command_test_input_redirection(){
     args_to_command(&args, &cmd);
 
     // ASSERT
+    assert_int_equal(cmd.argc, 1);
     assert_str_equal(cmd.file, "sort");
-    assert_str_equal(cmd.args[0], "sort");
+    assert_str_equal(cmd.argv[0], "sort");
     assert_str_equal(cmd.input, "input.txt");
 }
 
@@ -88,8 +91,9 @@ void args_to_command_test_output_redirection(){
 
     // ASSERT
     assert_str_equal(cmd.file, "echo");
-    assert_str_equal(cmd.args[0], "echo");
-    assert_str_equal(cmd.args[1], "test");
+    assert_int_equal(cmd.argc, 2);
+    assert_str_equal(cmd.argv[0], "echo");
+    assert_str_equal(cmd.argv[1], "test");
     assert_str_equal(cmd.output, "output.txt");
     assert_int_equal(cmd.bg, 0);
 }
@@ -112,8 +116,9 @@ void args_to_command_test_input_and_output_redirection(){
 
     // ASSERT
     assert_str_equal(cmd.file, "sort");
-    assert_str_equal(cmd.args[0], "sort");
-    assert_str_equal(cmd.args[1], "--reverse");
+    assert_int_equal(cmd.argc, 2);
+    assert_str_equal(cmd.argv[0], "sort");
+    assert_str_equal(cmd.argv[1], "--reverse");
     assert_str_equal(cmd.input, "input.txt");
     assert_str_equal(cmd.output, "output.txt");
     assert_int_equal(cmd.bg, 0);
@@ -137,8 +142,9 @@ void args_to_command_test_full_syntax(){
 
     // ASSERT
     assert_str_equal(cmd.file, "sort");
-    assert_str_equal(cmd.args[0], "sort");
-    assert_str_equal(cmd.args[1], "-r");
+    assert_int_equal(cmd.argc, 2);
+    assert_str_equal(cmd.argv[0], "sort");
+    assert_str_equal(cmd.argv[1], "-r");
     assert_str_equal(cmd.input, "input.txt");
     assert_str_equal(cmd.output, "output.txt");
     assert_int_equal(cmd.bg, 1);

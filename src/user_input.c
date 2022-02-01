@@ -29,16 +29,10 @@ void input_to_args(char* input_buffer, RawArgs* args) {
     if (strncmp(token, "#", 1) == 0)
         return;
 
-    /* line contains arguments */
-    strcpy(args->items[args->size], token);
-    args->size += 1;
-
     while (token != NULL) {
+        strcpy(args->items[args->size], token);
+        args->size += 1;
         token = strtok(NULL, " \n");
-        if (token != NULL) {
-            strcpy(args->items[args->size], token);
-            args->size += 1;
-        }
     }
 
 }
@@ -52,6 +46,7 @@ void print_args(RawArgs* args) {
 
 void args_to_command(RawArgs* args, Command* cmd) {
     int cmd_args_index = 0;
+    cmd->argc = 0;
 
     if (args->size == 0)
         return;
@@ -72,7 +67,8 @@ void args_to_command(RawArgs* args, Command* cmd) {
             break; // we are at the end of the command
         }
 
-        strcpy(cmd->args[cmd_args_index], args->items[i]);
+        strcpy(cmd->argv[cmd_args_index], args->items[i]);
+        cmd->argc += 1;
         cmd_args_index++;
 
     }
