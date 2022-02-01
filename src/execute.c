@@ -6,40 +6,40 @@
 #include <sys/wait.h>   // waitpid
 #include <unistd.h>     // execvp, fork, getpid
 
-int dispatch_cmd(RawArgs *args){
+int dispatch_cmd(Command* command){
     char *cmd;
 
-    if (args->size == 0)
+    if (command->argc == 0)
         return 0;
 
-    cmd = args->items[0];
+    cmd = command->argv[0];
 
     if (strcmp(cmd, "exit") == 0) {
         puts("TODO: exit");
     } else if (strcmp(cmd, "status") == 0) {
         puts("TODO: status");
     } else if (strcmp(cmd, "cd") == 0) {
-        if (args->size == 1) {
+        if (command->argc == 1) {
             cd(NULL);
         } else {
-            cd(args->items[1]);
+            cd(command->argv[1]);
         }
     } else {
-        run_external_cmd(args);
+        run_external_cmd(command);
     }
 
     return 0;
 }
 
-int run_external_cmd(RawArgs* args) {
-    char *argv[args->size + 1];
+int run_external_cmd(Command* command) {
+    char *argv[command->argc + 1];
     int child_status;
     pid_t spawn_pid;
 
-    for (int i = 0; i < args->size; i++) {
-        argv[i] = args->items[i];
+    for (int i = 0; i < command->argc; i++) {
+        argv[i] = command->argv[i];
     }
-    argv[args->size] = NULL;
+    argv[command->argc] = NULL;
 
     spawn_pid = fork();
 

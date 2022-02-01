@@ -3,7 +3,7 @@
 
 #include "user_input.h"
 
-int dispatch_cmd(RawArgs* args);
-int run_external_cmd(RawArgs* args);
+int dispatch_cmd(Command* cmd);
+int run_external_cmd(Command* cmd);
 
 #endif // EXECUTE_H

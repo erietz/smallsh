@@ -16,7 +16,8 @@ int main(int argc, char *argv[]) {
     };
     Command cmd = {
         .file = NULL,
-        .args = {},
+        .argc = 0,
+        .argv = {},
         .input = NULL,
         .output = NULL,
         .bg = 0,
@@ -27,7 +28,7 @@ int main(int argc, char *argv[]) {
         input_to_args(input_buffer, &args);
         args_to_command(&args, &cmd);
         /* print_args(&args); */
-        dispatch_cmd(&args);
+        dispatch_cmd(&cmd);
     }
 
     return 0;
