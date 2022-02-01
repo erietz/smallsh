@@ -6,7 +6,7 @@
 #include <sys/wait.h>   // waitpid
 #include <unistd.h>     // execvp, fork, getpid
 
-int dispatch_cmd(Args *args){
+int dispatch_cmd(RawArgs *args){
     char *cmd;
 
     if (args->size == 0)
@@ -31,7 +31,7 @@ int dispatch_cmd(Args *args){
     return 0;
 }
 
-int run_external_cmd(Args* args) {
+int run_external_cmd(RawArgs* args) {
     char *argv[args->size + 1];
     int child_status;
     pid_t spawn_pid;

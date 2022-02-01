@@ -1,2 +1,4 @@
 smallsh
 obj/*
+test/obj/*
+test/run_tests

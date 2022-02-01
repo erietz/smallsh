@@ -8,9 +8,17 @@
 /* input prompt on the command line */
 #define PROMPT ": "
 
-typedef struct Args {
+typedef struct RawArgs {
     int size;
     char items[MAX_ARGS][MAX_CHARS];
-} Args;
+} RawArgs;
+
+typedef struct Command {
+    char *file;
+    char args[MAX_ARGS][MAX_CHARS];
+    char *input;
+    char *output;
+    int bg;
+} Command;
 
 #endif // GLOBALS_H
