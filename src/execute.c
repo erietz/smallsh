@@ -41,8 +41,14 @@ int run_external_cmd(Command* command) {
     }
     argv[command->argc] = NULL;
 
-    spawn_pid = fork();
+    if (command->input != NULL) {
+        dup2();
+    }
 
+    if (command->output != NULL) {
+    }
+
+    spawn_pid = fork();
     switch (spawn_pid) {
         case -1:
             perror("fork()\n");

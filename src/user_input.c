@@ -47,6 +47,9 @@ void print_args(RawArgs* args) {
 void args_to_command(RawArgs* args, Command* cmd) {
     int cmd_args_index = 0;
     cmd->argc = 0;
+    cmd->input = NULL;
+    cmd->output = NULL;
+    cmd->bg = 0;
 
     if (args->size == 0)
         return;
