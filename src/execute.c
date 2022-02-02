@@ -1,6 +1,7 @@
 #include "execute.h"
 #include "builtin.h"
 #include <stdio.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>     // exit
 #include <sys/wait.h>   // waitpid
@@ -35,6 +36,8 @@ int run_external_cmd(Command* command) {
     char *argv[command->argc + 1];
     int child_status;
     pid_t spawn_pid;
+    int input_fd = -1;
+    int output_fd = -1;
 
     for (int i = 0; i < command->argc; i++) {
         argv[i] = command->argv[i];
@@ -42,10 +45,29 @@ int run_external_cmd(Command* command) {
     argv[command->argc] = NULL;
 
     if (command->input != NULL) {
-        dup2();
+        input_fd = open(command->input, O_RDONLY);
+        if (input_fd == -1) {
+            perror("open()");
+            exit(1);
+        }
+        int result = dup2(input_fd, 0);
+        if (result == -1) {
+            perror("dup2()");
+            exit(1);
+        }
     }
 
     if (command->output != NULL) {
+        output_fd = open(command->output, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (output_fd == -1) {
+            perror("open()");
+            exit(1);
+        }
+        int result = dup2(output_fd, 1);
+        if (result == -1) {
+            perror("dup2()");
+            exit(1);
+        }
     }
 
     spawn_pid = fork();
@@ -63,6 +85,16 @@ int run_external_cmd(Command* command) {
         default:
             // parent process (spawn_pid is the process id of the child)
             spawn_pid = waitpid(spawn_pid, &child_status, 0);
+
+
+            if (input_fd != -1) {
+                close(input_fd);
+            }
+
+            if (output_fd != -1) {
+                close(output_fd);
+            }
+
             return 1;
             break;
     }
