@@ -32,17 +32,9 @@ int dispatch_cmd(Command* command){
     return 0;
 }
 
-int run_external_cmd(Command* command) {
-    char *argv[command->argc + 1];
-    int child_status;
-    pid_t spawn_pid;
+static void exec_cmd(Command* command, char* argv[]) {
     int input_fd = -1;
     int output_fd = -1;
-
-    for (int i = 0; i < command->argc; i++) {
-        argv[i] = command->argv[i];
-    }
-    argv[command->argc] = NULL;
 
     if (command->input != NULL) {
         input_fd = open(command->input, O_RDONLY);
@@ -55,6 +47,8 @@ int run_external_cmd(Command* command) {
             perror("dup2()");
             exit(1);
         }
+
+        fcntl(input_fd, F_SETFD, FD_CLOEXEC);
     }
 
     if (command->output != NULL) {
@@ -68,7 +62,22 @@ int run_external_cmd(Command* command) {
             perror("dup2()");
             exit(1);
         }
+
+        fcntl(output_fd, F_SETFD, FD_CLOEXEC);
     }
+
+    execvp(argv[0], argv);
+}
+
+int run_external_cmd(Command* command) {
+    char *argv[command->argc + 1];
+    int child_status;
+    pid_t spawn_pid;
+
+    for (int i = 0; i < command->argc; i++) {
+        argv[i] = command->argv[i];
+    }
+    argv[command->argc] = NULL;
 
     spawn_pid = fork();
     switch (spawn_pid) {
@@ -78,23 +87,14 @@ int run_external_cmd(Command* command) {
             break;
         case 0:
             // child process
-            execvp(argv[0], argv);
+            exec_cmd(command, argv);
             perror("smallsh");
             return 0;
             break;
         default:
             // parent process (spawn_pid is the process id of the child)
             spawn_pid = waitpid(spawn_pid, &child_status, 0);
-
-
-            if (input_fd != -1) {
-                close(input_fd);
-            }
-
-            if (output_fd != -1) {
-                close(output_fd);
-            }
-
+            fflush(stdout);
             return 1;
             break;
     }
