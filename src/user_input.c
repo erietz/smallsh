@@ -2,11 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /* input prompt on the command line */
 #define PROMPT ": "
 
-static void expand_pid(char* input, char* output, int offset, int pid);
+static void expand_pid(char* input, char* output, int offset);
 
 void read_input(char* input_buffer) {
     char *raw_input;
@@ -42,7 +43,7 @@ void input_to_args(char* input_buffer, RawArgs* args) {
 
 }
 
-void args_to_command(RawArgs* args, Command* cmd, int pid) {
+void args_to_command(RawArgs* args, Command* cmd) {
     int cmd_argv_index = 0;
     cmd->argc = 0;
     cmd->input = NULL;
@@ -61,7 +62,7 @@ void args_to_command(RawArgs* args, Command* cmd, int pid) {
         // Expand any $$ to process id of smallsh
         if ((arg_pid_loc = strstr(args->items[i], "$$")) != NULL) {
             int offset = arg_pid_loc - args->items[i]; // index of substring $$
-            expand_pid(args->items[i], arg_expanded_pid, offset, pid);
+            expand_pid(args->items[i], arg_expanded_pid, offset);
         }
 
         // Redirecting stdin
@@ -92,7 +93,8 @@ void args_to_command(RawArgs* args, Command* cmd, int pid) {
 
 }
 
-static void expand_pid(char* input, char* output, int offset, int pid) {
+static void expand_pid(char* input, char* output, int offset) {
+    pid_t pid = getpid();
     int length = strlen(input);
     char pid_as_str[10]; // max int size = 2147483647
 
@@ -111,7 +113,7 @@ static void expand_pid(char* input, char* output, int offset, int pid) {
 
     j=0;
     for (int i=offset + pid_length; i<pid_length + length; i++){
-        output[i] = input[offset + 2 + j];
+        output[i] = input[offset + 2 + j];  // 2 is for $$
         j += 1;
     }
 
