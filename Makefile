@@ -58,6 +58,10 @@ $(TEST_BIN): $(TEST_OBJS) $(TEST_DEPS)
 test: $(OBJ) $(TEST_OBJ) $(TEST_BIN)
 	./$(TEST_BIN)
 
+.PHONY: integration-test
+integration-test:
+	./test/p3testscript
+
 .PHONY: leaks
 leaks: $(BIN)
 	valgrind --leak-check=yes --show-reachable=yes ./$(BIN)
