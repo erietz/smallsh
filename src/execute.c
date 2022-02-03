@@ -1,11 +1,14 @@
 #include "execute.h"
 #include "builtin.h"
 #include <stdio.h>
-#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>     // exit
+#include <fcntl.h>      // file control
 #include <sys/wait.h>   // waitpid
 #include <unistd.h>     // execvp, fork, getpid
+
+
+static void exec_cmd(Command *cmd);
 
 int dispatch_cmd(Command* command){
     char *cmd;
@@ -43,38 +46,46 @@ static void exec_cmd(Command* cmd) {
     }
     argv[cmd->argc] = NULL;
 
+    // Redirect stdin to input file
     if (cmd->input != NULL) {
-
+        // open the file to for the process to read from
         input_fd = open(cmd->input, O_RDONLY);
         if (input_fd == -1) {
             perror("open()");
             exit(1);
         }
 
+        // make stdin refer to input_fd
         int result = dup2(input_fd, 0);
         if (result == -1) {
             perror("dup2()");
             exit(1);
         }
 
+        // close the file descriptor after exec function finishes
         fcntl(input_fd, F_SETFD, FD_CLOEXEC);
     }
 
+    // Redirect stdout to output file
     if (cmd->output != NULL) {
         output_fd = open(cmd->output, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (output_fd == -1) {
             perror("open()");
             exit(1);
         }
+
+        // make stdout refer to output_fd
         int result = dup2(output_fd, 1);
         if (result == -1) {
             perror("dup2()");
             exit(1);
         }
 
+        // close the file descriptor after exec function finishes
         fcntl(output_fd, F_SETFD, FD_CLOEXEC);
     }
 
+    // execute the command from the argument vector from files in PATH
     execvp(argv[0], argv);
 }
 
