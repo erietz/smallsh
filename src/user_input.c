@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* input prompt on the command line */
+#define PROMPT ": "
+
 void read_input(char* input_buffer) {
     char *raw_input;
 
@@ -11,7 +14,7 @@ void read_input(char* input_buffer) {
     raw_input = fgets(input_buffer, MAX_CHARS, stdin);
 
     if (raw_input == NULL) {
-        puts("Error with fgets or EOF");
+        perror("Error with fgets or EOF");
     }
 }
 
@@ -35,13 +38,6 @@ void input_to_args(char* input_buffer, RawArgs* args) {
         token = strtok(NULL, " \n");
     }
 
-}
-
-void print_args(RawArgs* args) {
-    printf("Size of args: %i\n", args->size);
-    for (int i = 0; i < args->size; i++) {
-        puts(args->items[i]);
-    }
 }
 
 void args_to_command(RawArgs* args, Command* cmd) {

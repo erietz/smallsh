@@ -32,16 +32,25 @@ int dispatch_cmd(Command* command){
     return 0;
 }
 
-static void exec_cmd(Command* command, char* argv[]) {
+static void exec_cmd(Command* cmd) {
     int input_fd = -1;
     int output_fd = -1;
+    char *argv[cmd->argc + 1];
 
-    if (command->input != NULL) {
-        input_fd = open(command->input, O_RDONLY);
+    // execvp requires NULL terminated array
+    for (int i = 0; i < cmd->argc; i++) {
+        argv[i] = cmd->argv[i];
+    }
+    argv[cmd->argc] = NULL;
+
+    if (cmd->input != NULL) {
+
+        input_fd = open(cmd->input, O_RDONLY);
         if (input_fd == -1) {
             perror("open()");
             exit(1);
         }
+
         int result = dup2(input_fd, 0);
         if (result == -1) {
             perror("dup2()");
@@ -51,8 +60,8 @@ static void exec_cmd(Command* command, char* argv[]) {
         fcntl(input_fd, F_SETFD, FD_CLOEXEC);
     }
 
-    if (command->output != NULL) {
-        output_fd = open(command->output, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (cmd->output != NULL) {
+        output_fd = open(cmd->output, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (output_fd == -1) {
             perror("open()");
             exit(1);
@@ -69,15 +78,9 @@ static void exec_cmd(Command* command, char* argv[]) {
     execvp(argv[0], argv);
 }
 
-int run_external_cmd(Command* command) {
-    char *argv[command->argc + 1];
+int run_external_cmd(Command* cmd) {
     int child_status;
     pid_t spawn_pid;
-
-    for (int i = 0; i < command->argc; i++) {
-        argv[i] = command->argv[i];
-    }
-    argv[command->argc] = NULL;
 
     spawn_pid = fork();
     switch (spawn_pid) {
@@ -87,7 +90,7 @@ int run_external_cmd(Command* command) {
             break;
         case 0:
             // child process
-            exec_cmd(command, argv);
+            exec_cmd(cmd);
             perror("smallsh");
             return 0;
             break;

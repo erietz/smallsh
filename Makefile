@@ -25,10 +25,11 @@ TEST_BIN := $(TEST)/run_tests
 
 SRCS := $(wildcard $(SRC)/*.c)
 OBJS := $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SRCS))
+INCLUDES := $(wildcard $(SRC)/*.h)
 TESTS := $(wildcard $(TEST)/*.c)
 TEST_OBJS := $(patsubst $(TEST)/%.c, $(TEST_OBJ)/%.o, $(TESTS))
 # cannot include two main functions
-TEST_DEPS := $(filter-out $(OBJ)/main.o, $(OBJS)) 
+TEST_DEPS := $(filter-out $(OBJ)/main.o, $(OBJS)) $(INCLUDES)
 
 SUBMIT := rietze_program3.zip
 
@@ -38,7 +39,7 @@ all: $(OBJ) $(BIN)
 $(OBJ):
 	mkdir $@
 
-$(OBJ)/%.o: $(SRC)/%.c
+$(OBJ)/%.o: $(SRC)/%.c $(INCLUDES)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BIN): $(OBJS)
