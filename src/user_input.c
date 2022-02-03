@@ -6,6 +6,8 @@
 /* input prompt on the command line */
 #define PROMPT ": "
 
+static void expand_pid(char* input, char* output, int offset, int pid);
+
 void read_input(char* input_buffer) {
     char *raw_input;
 
@@ -58,30 +60,8 @@ void args_to_command(RawArgs* args, Command* cmd, int pid) {
 
         // Expand any $$ to process id of smallsh
         if ((arg_pid_loc = strstr(args->items[i], "$$")) != NULL) {
-            char* arg = args->items[i];
-            int offset = arg_pid_loc - arg; // index of substring $$
-            int length = strlen(arg);
-            char pid_as_str[10]; // max int size = 2147483647
-            sprintf(pid_as_str, "%i", pid);
-            int pid_length = strlen(pid_as_str);
-
-            for (int i=0; i<offset; i++) {
-                arg_expanded_pid[i] = arg[i];
-            }
-
-            int j=0;
-            for (int i=offset; i<offset + pid_length; i++) {
-                arg_expanded_pid[i] = pid_as_str[j];
-                j += 1;
-            }
-
-            j=0;
-            for (int i=offset + pid_length; i<pid_length + length; i++){
-                arg_expanded_pid[i] = arg[offset + 2 + j];
-                j += 1;
-            }
-
-            strcpy(arg, arg_expanded_pid);
+            int offset = arg_pid_loc - args->items[i]; // index of substring $$
+            expand_pid(args->items[i], arg_expanded_pid, offset, pid);
         }
 
         // Redirecting stdin
@@ -110,4 +90,30 @@ void args_to_command(RawArgs* args, Command* cmd, int pid) {
         cmd_argv_index++;
     }
 
+}
+
+static void expand_pid(char* input, char* output, int offset, int pid) {
+    int length = strlen(input);
+    char pid_as_str[10]; // max int size = 2147483647
+
+    sprintf(pid_as_str, "%i", pid);
+    int pid_length = strlen(pid_as_str);
+
+    for (int i=0; i<offset; i++) {
+        output[i] = input[i];
+    }
+
+    int j=0;
+    for (int i=offset; i<offset + pid_length; i++) {
+        output[i] = pid_as_str[j];
+        j += 1;
+    }
+
+    j=0;
+    for (int i=offset + pid_length; i<pid_length + length; i++){
+        output[i] = input[offset + 2 + j];
+        j += 1;
+    }
+
+    strcpy(input, output);
 }
