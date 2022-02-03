@@ -4,7 +4,8 @@
 #include <stdio.h>
 
 void exit_shell() {
-    return;
+    puts("TODO: Kill all background processes before exiting");
+    exit(1);
 }
 
 int cd(char *path) {

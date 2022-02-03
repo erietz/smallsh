@@ -62,16 +62,26 @@ test: $(OBJ) $(TEST_OBJ) $(TEST_BIN)
 leaks: $(BIN)
 	valgrind --leak-check=yes --show-reachable=yes ./$(BIN)
 
-.PHONY: clean
-clean:
-	rm $(OBJS)
-	rmdir $(OBJ)
-	rm $(BIN)
-	rm $(TEST_OBJS)
-	rmdir $(TEST_OBJ)
-	rm $(TEST_BIN)
+.PHONY: clean-generated-dirs
+clean-generated-dirs:
+	for dir in $(OBJ) $(TEST_OBJ); do \
+		if test -e $$dir; then \
+			rmdir $$dir ; \
+		fi ;\
+	done;
 
-	rm -rf ./test/scratch/*
+.PHONY: clean-files
+clean-files:
+	rm -f $(OBJS)
+	rm -f $(BIN)
+	rm -f $(TEST_OBJS)
+	rm -f $(TEST_BIN)
+	rm -f ./junk
+	rm -f ./junk2
+
+.PHONY: clean
+clean: clean-files clean-generated-dirs
+
 
 .PHONY: run
 run: $(OBJ) $(BIN)

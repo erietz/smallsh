@@ -19,7 +19,7 @@ int dispatch_cmd(Command* command){
     cmd = command->argv[0];
 
     if (strcmp(cmd, "exit") == 0) {
-        puts("TODO: exit");
+        exit_shell();
     } else if (strcmp(cmd, "status") == 0) {
         puts("TODO: status");
     } else if (strcmp(cmd, "cd") == 0) {
@@ -101,14 +101,26 @@ int run_external_cmd(Command* cmd) {
             break;
         case 0:
             // child process
-            exec_cmd(cmd);
+            exec_cmd(cmd);  // function only returns if error rwith exec
             perror("smallsh");
             return 0;
             break;
         default:
-            // parent process (spawn_pid is the process id of the child)
-            spawn_pid = waitpid(spawn_pid, &child_status, 0);
+            // parent process (default = spawn_pid = the process id of the
+            // child)
+
+            if (cmd->bg == 1) {
+                // Execute in the background
+                spawn_pid = waitpid(spawn_pid, &child_status, WNOHANG);
+                printf("Background pid: %d\n", spawn_pid);
+                fflush(stdout);
+            } else {
+                // Execute and block
+                spawn_pid = waitpid(spawn_pid, &child_status, 0);
+                fflush(stdout);
+            }
             fflush(stdout);
+
             return 1;
             break;
     }

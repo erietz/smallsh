@@ -150,10 +150,29 @@ void args_to_command_test_full_syntax(){
     assert_int_equal(cmd.bg, 1);
 }
 
+void args_to_command_test_background_only() {
+    // ARRANGE
+    RawArgs args = {
+        .size = 3,
+        .items = { "ping", "flip", "&" }
+    };
+    Command cmd;
+
+    // ACT
+    args_to_command(&args, &cmd);
+
+    // ASSERT
+    assert_int_equal(cmd.argc, 2);
+    assert_str_equal(cmd.argv[0], "ping");
+    assert_str_equal(cmd.argv[1], "flip");
+    assert_int_equal(cmd.bg, 1);
+}
+
 void run_user_input_tests() {
     args_to_command_test_cmd_only();
     args_to_command_test_cmd_with_args();
     args_to_command_test_input_redirection();
     args_to_command_test_input_and_output_redirection();
     args_to_command_test_full_syntax();
+    args_to_command_test_background_only();
 }

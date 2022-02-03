@@ -66,6 +66,10 @@ void args_to_command(RawArgs* args, Command* cmd) {
             break; // we are at the end of the command
         }
 
+        if (strcmp(args->items[i], "&") == 0 && i == args->size - 1) {
+            break;
+        }
+
         strcpy(cmd->argv[cmd_args_index], args->items[i]);
         cmd->argc += 1;
         cmd_args_index++;
