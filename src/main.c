@@ -1,6 +1,7 @@
 #include "user_input.h"
 #include "execute.h"
 #include <stdio.h>
+#include <unistd.h>
 
 char input_buffer[MAX_CHARS];
 
@@ -19,11 +20,12 @@ Command cmd = {
 };
 
 int main(int argc, char *argv[]) {
+    pid_t pid = getpid();
 
     while (1) {
         read_input(input_buffer);
         input_to_args(input_buffer, &args);
-        args_to_command(&args, &cmd);
+        args_to_command(&args, &cmd, pid);
         dispatch_cmd(&cmd);
     }
 

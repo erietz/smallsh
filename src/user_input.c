@@ -40,12 +40,14 @@ void input_to_args(char* input_buffer, RawArgs* args) {
 
 }
 
-void args_to_command(RawArgs* args, Command* cmd) {
-    int cmd_args_index = 0;
+void args_to_command(RawArgs* args, Command* cmd, int pid) {
+    int cmd_argv_index = 0;
     cmd->argc = 0;
     cmd->input = NULL;
     cmd->output = NULL;
     cmd->bg = 0;
+    char arg_expanded_pid[MAX_CHARS];
+    char* arg_pid_loc;
 
     if (args->size == 0)
         return;
@@ -54,30 +56,58 @@ void args_to_command(RawArgs* args, Command* cmd) {
 
     for (int i = 0; i < args->size; i++) {
 
+        // Expand any $$ to process id of smallsh
+        if ((arg_pid_loc = strstr(args->items[i], "$$")) != NULL) {
+            char* arg = args->items[i];
+            int offset = arg_pid_loc - arg; // index of substring $$
+            int length = strlen(arg);
+            char pid_as_str[10]; // max int size = 2147483647
+            sprintf(pid_as_str, "%i", pid);
+            int pid_length = strlen(pid_as_str);
+
+            for (int i=0; i<offset; i++) {
+                arg_expanded_pid[i] = arg[i];
+            }
+
+            int j=0;
+            for (int i=offset; i<offset + pid_length; i++) {
+                arg_expanded_pid[i] = pid_as_str[j];
+                j += 1;
+            }
+
+            j=0;
+            for (int i=offset + pid_length; i<pid_length + length; i++){
+                arg_expanded_pid[i] = arg[offset + 2 + j];
+                j += 1;
+            }
+
+            strcpy(arg, arg_expanded_pid);
+        }
+
+        // Redirecting stdin
         if (strcmp(args->items[i], "<") == 0) {
             cmd->input = args->items[i + 1];
             i += 1; // skip the "<" character
-            continue; // skip the input file name
+            continue; // skip the input file name as an arg
         }
 
+        // Redirecting stdout
         if (strcmp(args->items[i], ">") == 0) {
             cmd->output = args->items[i + 1];
             i += 1; // skip the ">" character
-            break; // we are at the end of the command
+            continue; // skip the output file as an arg
         }
 
+        // Run process in background
         if (strcmp(args->items[i], "&") == 0 && i == args->size - 1) {
-            break;
+            cmd->bg = 1;
+            break;  // we are at the end of the command
         }
 
-        strcpy(cmd->argv[cmd_args_index], args->items[i]);
+        // Argument is not a special character so copy it into cmd argv
+        strcpy(cmd->argv[cmd_argv_index], args->items[i]);
         cmd->argc += 1;
-        cmd_args_index++;
-
-    }
-
-    if (strcmp(args->items[args->size - 1], "&") == 0) {
-        cmd->bg = 1;
+        cmd_argv_index++;
     }
 
 }

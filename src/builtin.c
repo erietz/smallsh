@@ -24,3 +24,6 @@ int cd(char *path) {
 
     return 0;
 }
+
+void status() {
+}

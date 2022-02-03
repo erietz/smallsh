@@ -111,8 +111,9 @@ int run_external_cmd(Command* cmd) {
 
             if (cmd->bg == 1) {
                 // Execute in the background
+                printf("BEFORE Background pid: %d\n", spawn_pid);
                 spawn_pid = waitpid(spawn_pid, &child_status, WNOHANG);
-                printf("Background pid: %d\n", spawn_pid);
+                printf("AFTER Background pid: %d\n", spawn_pid);
                 fflush(stdout);
             } else {
                 // Execute and block
