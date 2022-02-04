@@ -1,23 +1,32 @@
+/* headers */
 #include "user_input.h"
+#include "execute.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-/* input prompt on the command line */
-#define PROMPT ": "
+/* macros */
+#define PROMPT ": "     // input prompt on the command line
 
+/* types */
+/* function declarations */
 static void expand_pid(char* input, char* output, int offset);
 
+/* global variables */
+/* function definitions */
 void read_input(char* input_buffer) {
     char *raw_input;
 
     memset(input_buffer, '\0', MAX_CHARS*sizeof(char));
     printf(PROMPT);
+    fflush(stdout);
     raw_input = fgets(input_buffer, MAX_CHARS, stdin);
 
     if (raw_input == NULL) {
-        perror("Error with fgets or EOF");
+        // typing ctrl-d into a terminal sends EOF which causes fgets to return
+        // null. In this case we can just exit the shell.
+        exit_shell();
     }
 }
 
@@ -93,6 +102,7 @@ void args_to_command(RawArgs* args, Command* cmd) {
 
 }
 
+// TODO: this only expands one occurance of $$. Maybe make this recursive?
 static void expand_pid(char* input, char* output, int offset) {
     pid_t pid = getpid();
     int length = strlen(input);

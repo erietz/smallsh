@@ -5,8 +5,6 @@
 #define MAX_CHARS 2048
 /* maximum number of space delimited words that can be read from user*/
 #define MAX_ARGS 512
-/* input prompt on the command line */
-#define PROMPT ": "
 
 typedef struct RawArgs {
     int size;

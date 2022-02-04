@@ -1,24 +1,20 @@
+/* headers */
 #include "user_input.h"
 #include "execute.h"
 #include <stdio.h>
 
+/* macros */
+/* types */
+/* function declarations */
+/* global variables */
 char input_buffer[MAX_CHARS];
+RawArgs args = {0};
+Command cmd = {0};
 
-RawArgs args = {
-    .size = 0,
-    .items = {}
-};
-
-Command cmd = {
-    .file = NULL,
-    .argc = 0,
-    .argv = {},
-    .input = NULL,
-    .output = NULL,
-    .bg = 0,
-};
-
+/* function definitions */
 int main(int argc, char *argv[]) {
+
+    initialize_signal_handlers();
 
     while (1) {
         read_input(input_buffer);
