@@ -1,5 +1,4 @@
 #include "execute.h"
-#include "builtin.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>     // exit
@@ -9,6 +8,40 @@
 
 
 static void exec_cmd(Command *cmd);
+
+BgProcess bg_processes = {
+    .pid = -1,
+    .next = NULL,
+};
+
+
+void append_bg_node(BgProcess* node, int pid) {
+    if (node->pid == -1) {
+        node->pid = pid;
+        return;
+    }
+
+    BgProcess* new_node = malloc(sizeof(BgProcess));
+    new_node->pid = pid;
+    new_node->next = NULL;
+
+    while (node->next != NULL) {
+        node = node->next;
+    }
+
+    node->next = new_node;
+}
+
+void free_process_list(BgProcess* node){
+    BgProcess* tmp;
+
+    while (node != NULL) {
+        tmp = node;
+        node = node->next;
+        free(tmp);
+    }
+}
+
 
 int dispatch_cmd(Command* command){
     char *cmd;
@@ -97,13 +130,13 @@ int run_external_cmd(Command* cmd) {
     switch (spawn_pid) {
         case -1:
             perror("fork()\n");
-            return -1;
+            return 2;
             break;
         case 0:
             // child process
             exec_cmd(cmd);  // function only returns if error rwith exec
             perror("smallsh");
-            return 0;
+            return 2;
             break;
         default:
             // parent process (default = spawn_pid = the process id of the
@@ -111,17 +144,52 @@ int run_external_cmd(Command* cmd) {
 
             if (cmd->bg == 1) {
                 // Execute in the background
+                waitpid(spawn_pid, &child_status, WNOHANG);
                 printf("Background pid: %d\n", spawn_pid);
-                spawn_pid = waitpid(spawn_pid, &child_status, WNOHANG);
-                fflush(stdout);
+                append_bg_node(&bg_processes, spawn_pid);
             } else {
                 // Execute and block
-                spawn_pid = waitpid(spawn_pid, &child_status, 0);
-                fflush(stdout);
+                waitpid(spawn_pid, &child_status, 0);
             }
             fflush(stdout);
 
-            return 1;
+            return child_status;
             break;
     }
+}
+
+void exit_shell() {
+    BgProcess *curr = &bg_processes;
+
+    // no background processes have been added
+    if (curr->pid == -1)
+        exit(0);
+
+    while (curr != NULL) {
+        printf("killing process %i\n", curr->pid);
+        kill(curr->pid, SIGKILL);
+        curr = curr->next;
+    }
+
+    exit(0);
+}
+
+int cd(char *path) {
+    char *dir;
+
+    if (path == NULL) {
+        dir = getenv("HOME");
+    } else {
+        dir = path;
+    }
+
+    if (chdir(dir) == -1) {
+        puts("failed to cd");
+        return 1;
+    }
+
+    return 0;
+}
+
+void status() {
 }
