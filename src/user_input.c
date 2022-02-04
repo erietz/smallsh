@@ -56,7 +56,6 @@ void args_to_command(RawArgs* args, Command* cmd) {
     cmd->input = NULL;
     cmd->output = NULL;
     cmd->bg = 0;
-    char arg_expanded_pid[MAX_CHARS];
     char* arg_pid_loc;
 
     // blank line
@@ -70,7 +69,7 @@ void args_to_command(RawArgs* args, Command* cmd) {
         // Expand any $$ to process id of smallsh
         if ((arg_pid_loc = strstr(args->items[i], "$$")) != NULL) {
             int offset = arg_pid_loc - args->items[i]; // index of substring $$
-            expand_pid(args->items[i], arg_expanded_pid, offset);
+            expand_pid(args->items[i], offset);
         }
 
         // Redirecting stdin
@@ -101,36 +100,38 @@ void args_to_command(RawArgs* args, Command* cmd) {
 
 }
 
-// TODO: this only expands one occurance of $$. Maybe make this recursive?
-void expand_pid(char* input, char* output, int offset) {
+// NOTE: Too many recursive calls (TODO how many is too many?) may result int
+// stack overflow as tmp_buffer is allocated for each call.
+void expand_pid(char* input, int offset) {
     pid_t pid = getpid();
     int length = strlen(input);
     char pid_as_str[10]; // max int size = 2147483647
     char* arg_pid_loc;
+    char tmp_buffer[MAX_CHARS];
 
     sprintf(pid_as_str, "%i", pid);
     int pid_length = strlen(pid_as_str);
 
     for (int i=0; i<offset; i++) {
-        output[i] = input[i];
+        tmp_buffer[i] = input[i];
     }
 
     int j=0;
     for (int i=offset; i<offset + pid_length; i++) {
-        output[i] = pid_as_str[j];
+        tmp_buffer[i] = pid_as_str[j];
         j += 1;
     }
 
     j=0;
     for (int i=offset + pid_length; i<pid_length + length; i++){
-        output[i] = input[offset + 2 + j];  // 2 is for $$
+        tmp_buffer[i] = input[offset + 2 + j];  // 2 is for $$
         j += 1;
     }
 
-    strcpy(input, output);
+    strcpy(input, tmp_buffer);
 
-    if ((arg_pid_loc = strstr(output, "$$")) != NULL) {
-        int offset = arg_pid_loc - output; // index of substring $$
-        expand_pid(output, output, offset);
+    if ((arg_pid_loc = strstr(input, "$$")) != NULL) {
+        int offset = arg_pid_loc - input; // index of substring $$
+        expand_pid(input, offset);
     }
 }

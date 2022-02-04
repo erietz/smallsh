@@ -55,39 +55,48 @@ void input_to_args_test_real_input() {
 
 void expand_pid_test1() {
     char input[] = "$$";
-    char output[10 + 2];
     int offset = 0;
     pid_t pid = getpid();
 
-    expand_pid(input, output, offset);
+    expand_pid(input, offset);
 
-    assert_int_equal(atoi(output), pid);
+    assert_int_equal(atoi(input), pid);
 }
 
 void expand_pid_test2() {
     char input[] = "test$$test";
-    char output[100];
     int offset = 4;
     pid_t pid= getpid();
     char expected[100];
     sprintf(expected, "%s%i%s", "test", pid, "test");
 
-    expand_pid(input, output, offset);
+    expand_pid(input, offset);
 
-    assert_str_equal(output, expected);
+    assert_str_equal(input, expected);
 }
 
 void expand_pid_test3() {
     char input[] = "$$test$$";
-    char output[100];
     int offset = 0;
     pid_t pid= getpid();
     char expected[100];
     sprintf(expected, "%i%s%i", pid, "test", pid);
 
-    expand_pid(input, output, offset);
+    expand_pid(input, offset);
 
-    assert_str_equal(output, expected);
+    assert_str_equal(input, expected);
+}
+
+void expand_pid_test4() {
+    char input[] = "$$$test$$";
+    int offset = 0;
+    pid_t pid= getpid();
+    char expected[100];
+    sprintf(expected, "%i$%s%i", pid, "test", pid);
+
+    expand_pid(input, offset);
+
+    assert_str_equal(input, expected);
 }
 
 // }}}
@@ -241,6 +250,7 @@ void run_user_input_tests() {
     expand_pid_test1();
     expand_pid_test2();
     expand_pid_test3();
+    expand_pid_test4();
 
     args_to_command_test_cmd_only();
     args_to_command_test_cmd_with_args();
