@@ -54,7 +54,7 @@ void input_to_args_test_real_input() {
 // expand_pid_test {{{
 
 void expand_pid_test1() {
-    char input[] = "$$";
+    char input[50] = "$$";
     int offset = 0;
     pid_t pid = getpid();
 
@@ -64,7 +64,7 @@ void expand_pid_test1() {
 }
 
 void expand_pid_test2() {
-    char input[] = "test$$test";
+    char input[50] = "test$$test";
     int offset = 4;
     pid_t pid= getpid();
     char expected[100];
@@ -76,7 +76,7 @@ void expand_pid_test2() {
 }
 
 void expand_pid_test3() {
-    char input[] = "$$test$$";
+    char input[50] = "$$test$$";
     int offset = 0;
     pid_t pid= getpid();
     char expected[100];
@@ -88,7 +88,7 @@ void expand_pid_test3() {
 }
 
 void expand_pid_test4() {
-    char input[] = "$$$test$$";
+    char input[50] = "$$$test$$";
     int offset = 0;
     pid_t pid= getpid();
     char expected[100];
@@ -258,4 +258,5 @@ void run_user_input_tests() {
     args_to_command_test_input_and_output_redirection();
     args_to_command_test_full_syntax();
     args_to_command_test_background_only();
+
 }
