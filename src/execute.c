@@ -9,6 +9,7 @@
 
 static void exec_cmd(Command *cmd);
 
+int last_cmd_exit_status = 0;
 BgProcess bg_processes = {
     .pid = -1,
     .next = NULL,
@@ -54,7 +55,7 @@ int dispatch_cmd(Command* command){
     if (strcmp(cmd, "exit") == 0) {
         exit_shell();
     } else if (strcmp(cmd, "status") == 0) {
-        puts("TODO: status");
+        status();
     } else if (strcmp(cmd, "cd") == 0) {
         if (command->argc == 1) {
             cd(NULL);
@@ -148,8 +149,9 @@ int run_external_cmd(Command* cmd) {
                 printf("Background pid: %d\n", spawn_pid);
                 append_bg_node(&bg_processes, spawn_pid);
             } else {
-                // Execute and block
+                // Execute and block in the foreground
                 waitpid(spawn_pid, &child_status, 0);
+                last_cmd_exit_status = child_status;
             }
             fflush(stdout);
 
@@ -166,6 +168,7 @@ void exit_shell() {
         exit(0);
 
     while (curr != NULL) {
+        // TODO: delete this line
         printf("killing process %i\n", curr->pid);
         kill(curr->pid, SIGKILL);
         curr = curr->next;
@@ -192,4 +195,5 @@ int cd(char *path) {
 }
 
 void status() {
+    printf("Last command exit status %d\n", last_cmd_exit_status);
 }
