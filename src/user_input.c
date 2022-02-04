@@ -106,6 +106,7 @@ void expand_pid(char* input, char* output, int offset) {
     pid_t pid = getpid();
     int length = strlen(input);
     char pid_as_str[10]; // max int size = 2147483647
+    char* arg_pid_loc;
 
     sprintf(pid_as_str, "%i", pid);
     int pid_length = strlen(pid_as_str);
@@ -127,4 +128,9 @@ void expand_pid(char* input, char* output, int offset) {
     }
 
     strcpy(input, output);
+
+    if ((arg_pid_loc = strstr(output, "$$")) != NULL) {
+        int offset = arg_pid_loc - output; // index of substring $$
+        expand_pid(output, output, offset);
+    }
 }

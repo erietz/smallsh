@@ -65,9 +65,29 @@ void expand_pid_test1() {
 }
 
 void expand_pid_test2() {
+    char input[] = "test$$test";
+    char output[100];
+    int offset = 4;
+    pid_t pid= getpid();
+    char expected[100];
+    sprintf(expected, "%s%i%s", "test", pid, "test");
+
+    expand_pid(input, output, offset);
+
+    assert_str_equal(output, expected);
 }
 
 void expand_pid_test3() {
+    char input[] = "$$test$$";
+    char output[100];
+    int offset = 0;
+    pid_t pid= getpid();
+    char expected[100];
+    sprintf(expected, "%i%s%i", pid, "test", pid);
+
+    expand_pid(input, output, offset);
+
+    assert_str_equal(output, expected);
 }
 
 // }}}
