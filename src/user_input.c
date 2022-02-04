@@ -11,17 +11,15 @@
 
 /* types */
 /* function declarations */
-static void expand_pid(char* input, char* output, int offset);
-
 /* global variables */
 /* function definitions */
-void read_input(char* input_buffer) {
+void read_input(char* input_buffer, int num_chars, FILE *input) {
     char *raw_input;
 
-    memset(input_buffer, '\0', MAX_CHARS*sizeof(char));
+    memset(input_buffer, '\0', num_chars*sizeof(char));
     printf(PROMPT);
     fflush(stdout);
-    raw_input = fgets(input_buffer, MAX_CHARS, stdin);
+    raw_input = fgets(input_buffer, num_chars, input);
 
     if (raw_input == NULL) {
         // typing ctrl-d into a terminal sends EOF which causes fgets to return
@@ -61,6 +59,7 @@ void args_to_command(RawArgs* args, Command* cmd) {
     char arg_expanded_pid[MAX_CHARS];
     char* arg_pid_loc;
 
+    // blank line
     if (args->size == 0)
         return;
 
@@ -103,7 +102,7 @@ void args_to_command(RawArgs* args, Command* cmd) {
 }
 
 // TODO: this only expands one occurance of $$. Maybe make this recursive?
-static void expand_pid(char* input, char* output, int offset) {
+void expand_pid(char* input, char* output, int offset) {
     pid_t pid = getpid();
     int length = strlen(input);
     char pid_as_str[10]; // max int size = 2147483647

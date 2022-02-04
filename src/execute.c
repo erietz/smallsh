@@ -20,8 +20,8 @@ static void handle_SIGTSTP(int sig_num);
 int current_process_in_background = 0;
 int last_cmd_exit_status = 0;
 BgProcess bg_processes = { .pid = -1, .next = NULL, };
-struct sigaction sa_sigint = {0};
-struct sigaction sa_sigtstp = {0};
+struct sigaction sa_sigint = {{0}};
+struct sigaction sa_sigtstp = {{0}};
 
 
 /* function definitions */

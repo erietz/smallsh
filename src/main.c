@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     initialize_signal_handlers();
 
     while (1) {
-        read_input(input_buffer);
+        read_input(input_buffer, MAX_CHARS, stdin);
         input_to_args(input_buffer, &args);
         args_to_command(&args, &cmd);
         dispatch_cmd(&cmd);
