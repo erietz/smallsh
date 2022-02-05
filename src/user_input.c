@@ -1,10 +1,12 @@
 /* headers */
 #include "user_input.h"
+#include "utility.h"
 #include "execute.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
 
 /* macros */
 #define PROMPT ": "     // input prompt on the command line
@@ -57,6 +59,7 @@ void args_to_command(RawArgs* args, Command* cmd) {
     cmd->output = NULL;
     cmd->bg = 0;
     char* arg_pid_loc;
+    char tmp_str[MAX_CHARS];
 
     // blank line
     if (args->size == 0)
@@ -68,8 +71,10 @@ void args_to_command(RawArgs* args, Command* cmd) {
 
         // Expand any $$ to process id of smallsh
         if ((arg_pid_loc = strstr(args->items[i], "$$")) != NULL) {
-            int offset = arg_pid_loc - args->items[i]; // index of substring $$
-            expand_pid(args->items[i], offset);
+            pid_t pid = getpid();
+            char pid_as_str[10];
+            sprintf(pid_as_str, "%i", pid);
+            replace_str(args->items[i], "$$", pid_as_str, tmp_str);
         }
 
         // Redirecting stdin
@@ -97,81 +102,6 @@ void args_to_command(RawArgs* args, Command* cmd) {
         cmd->argc += 1;
         cmd_argv_index++;
     }
-
-}
-
-// NOTE: Too many recursive calls (TODO how many is too many?) may result int
-// stack overflow as tmp_buffer is allocated for each call.
-void expand_pid(char* input, int offset) {
-    pid_t pid = getpid();
-    int length = strlen(input);
-    char pid_as_str[10]; // max int size = 2147483647
-    char* arg_pid_loc;
-    char tmp_buffer[MAX_CHARS];
-
-    sprintf(pid_as_str, "%i", pid);
-    int pid_length = strlen(pid_as_str);
-
-    for (int i=0; i<offset; i++) {
-        tmp_buffer[i] = input[i];
-    }
-
-    int j=0;
-    for (int i=offset; i<offset + pid_length; i++) {
-        tmp_buffer[i] = pid_as_str[j];
-        j += 1;
-    }
-
-    j=0;
-    for (int i=offset + pid_length; i<pid_length + length; i++){
-        tmp_buffer[i] = input[offset + 2 + j];  // 2 is for $$
-        j += 1;
-    }
-
-    strcpy(input, tmp_buffer);
-
-    if ((arg_pid_loc = strstr(input, "$$")) != NULL) {
-        int offset = arg_pid_loc - input; // index of substring $$
-        expand_pid(input, offset);
-    }
-}
-
-void replace_str(char input_str[], char *rep_str, char tmp_str[]) {
-    char* rep_loc;
-    int offset;
-    pid_t pid = getpid();
-    char pid_as_str[12];
-    sprintf(pid_as_str, "%i", pid);
-    /* int pid_len = strlen(pid_as_str); */
-    /* int input_len = strlen(input_str); */
-    int rep_len = strlen(rep_str);
-
-    while ((rep_loc = strstr(input_str, rep_str)) != NULL ) {
-        offset = rep_loc - input_str;
-        strncpy(tmp_str, input_str, offset);
-        tmp_str[offset] = '\0';
-        strcat(tmp_str, pid_as_str);
-        strcat(tmp_str, rep_loc + rep_len);
-        strcpy(input_str, tmp_str);
-    }
-
-    /* if ((rep_loc = strstr(input_str, rep_str)) != NULL) { */
-    /*     offset = rep_loc - input_str; */
-
-    /*     strncpy(tmp_str, input_str, offset); */
-    /*     strcat(tmp_str, pid_as_str); */
-    /*     strcat(tmp_str, rep_loc + rep_len); */
-
-    /*     /1* strncpy(tmp_str, input_str, offset); *1/ */
-    /*     /1* strncat(tmp_str, pid_as_str, pid_len); *1/ */
-    /*     /1* strncat(tmp_str, rep_loc + rep_len, input_len - offset - rep_len); *1/ */
-    /* } */
-
-    /* strncpy(input_str, tmp_str, strlen(input_str)); */
-
-    /* if (strstr(input_str, rep_str) != NULL) { */
-    /*     replace_str(input_str, rep_str, tmp_str); */
-    /* } */
 
 }
 

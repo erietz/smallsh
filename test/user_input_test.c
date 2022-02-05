@@ -1,5 +1,6 @@
 #include "../src/user_input.h"
 #include "../src/globals.h"
+#include "../src/utility.h"
 #include "unit_test.h"
 #include <string.h>
 #include <sys/types.h>
@@ -53,49 +54,57 @@ void input_to_args_test_real_input() {
 // }}}
 // expand_pid_test {{{
 
-void expand_pid_test1() {
+void replace_str_expand_pid_test1() {
     char input[50] = "$$";
     pid_t pid = getpid();
+    char pid_as_str[10];
+    sprintf(pid_as_str, "%i", pid);
     char tmp_str[50];
 
-    replace_str(input, "$$", tmp_str);
+    replace_str(input, "$$", pid_as_str, tmp_str);
 
     assert_int_equal(atoi(input), pid);
 }
 
-void expand_pid_test2() {
+void replace_str_expand_pid_test2() {
     char input[50] = "test$$test";
     pid_t pid= getpid();
+    char pid_as_str[10];
+    sprintf(pid_as_str, "%i", pid);
     char expected[100];
     sprintf(expected, "%s%i%s", "test", pid, "test");
     char tmp_str[50];
 
-    replace_str(input, "$$", tmp_str);
-    /* expand_pid(input, offset); */
+    replace_str(input, "$$", pid_as_str, tmp_str);
+    /* replace_str(input, offset); */
 
     assert_str_equal(input, expected);
 }
 
-void expand_pid_test3() {
+void replace_str_expand_pid_test3() {
     char input[100] = "$$test$$";
     pid_t pid= getpid();
+    char pid_as_str[10];
+    sprintf(pid_as_str, "%i", pid);
     char expected[100];
     sprintf(expected, "%i%s%i", pid, "test", pid);
     char tmp_str[100];
 
-    replace_str(input, "$$", tmp_str);
+    replace_str(input, "$$", pid_as_str, tmp_str);
 
     assert_str_equal(input, expected);
 }
 
-void expand_pid_test4() {
+void replace_str_expand_pid_test4() {
     char input[100] = "$$$test$$";
     pid_t pid= getpid();
+    char pid_as_str[10];
+    sprintf(pid_as_str, "%i", pid);
     char expected[100];
     sprintf(expected, "%i$%s%i", pid, "test", pid);
     char tmp_str[100];
 
-    replace_str(input, "$$", tmp_str);
+    replace_str(input, "$$", pid_as_str, tmp_str);
 
     assert_str_equal(input, expected);
 }
@@ -248,10 +257,10 @@ void run_user_input_tests() {
     input_to_args_test_comment_line();
     input_to_args_test_real_input();
 
-    expand_pid_test1();
-    expand_pid_test2();
-    expand_pid_test3();
-    expand_pid_test4();
+    replace_str_expand_pid_test1();
+    replace_str_expand_pid_test2();
+    replace_str_expand_pid_test3();
+    replace_str_expand_pid_test4();
 
     args_to_command_test_cmd_only();
     args_to_command_test_cmd_with_args();
