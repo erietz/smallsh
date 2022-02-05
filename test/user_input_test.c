@@ -55,22 +55,23 @@ void input_to_args_test_real_input() {
 
 void expand_pid_test1() {
     char input[50] = "$$";
-    int offset = 0;
     pid_t pid = getpid();
+    char tmp_str[50];
 
-    expand_pid(input, offset);
+    replace_str(input, "$$", tmp_str);
 
     assert_int_equal(atoi(input), pid);
 }
 
 void expand_pid_test2() {
     char input[50] = "test$$test";
-    int offset = 4;
     pid_t pid= getpid();
     char expected[100];
     sprintf(expected, "%s%i%s", "test", pid, "test");
+    char tmp_str[50];
 
-    expand_pid(input, offset);
+    replace_str(input, "$$", tmp_str);
+    /* expand_pid(input, offset); */
 
     assert_str_equal(input, expected);
 }

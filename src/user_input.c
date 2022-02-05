@@ -135,3 +135,29 @@ void expand_pid(char* input, int offset) {
         expand_pid(input, offset);
     }
 }
+
+void replace_str(char input_str[], char *rep_str, char tmp_str[]) {
+    char* rep_loc;
+    int offset;
+    pid_t pid = getpid();
+    char pid_as_str[12];
+    sprintf(pid_as_str, "%i", pid);
+    /* int pid_len = strlen(pid_as_str); */
+    /* int input_len = strlen(input_str); */
+
+    if ((rep_loc = strstr(input_str, rep_str)) != NULL) {
+        offset = rep_loc - input_str;
+        strncpy(tmp_str, input_str, offset);
+        strcat(tmp_str, pid_as_str);
+        /* strncat(tmp_str, pid_as_str, pid_len); */
+        strcat(tmp_str, rep_loc + strlen(rep_str));
+        /* strncat(tmp_str, rep_loc + pid_len, input_len - pid_len - offset); */
+    }
+
+    strcpy(input_str, tmp_str);
+
+    if (strstr(input_str, rep_str) != NULL) {
+        replace_str(input_str, rep_str, tmp_str);
+    }
+}
+
