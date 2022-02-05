@@ -77,25 +77,25 @@ void expand_pid_test2() {
 }
 
 void expand_pid_test3() {
-    char input[50] = "$$test$$";
-    int offset = 0;
+    char input[100] = "$$test$$";
     pid_t pid= getpid();
     char expected[100];
     sprintf(expected, "%i%s%i", pid, "test", pid);
+    char tmp_str[100];
 
-    expand_pid(input, offset);
+    replace_str(input, "$$", tmp_str);
 
     assert_str_equal(input, expected);
 }
 
 void expand_pid_test4() {
-    char input[50] = "$$$test$$";
-    int offset = 0;
+    char input[100] = "$$$test$$";
     pid_t pid= getpid();
     char expected[100];
     sprintf(expected, "%i$%s%i", pid, "test", pid);
+    char tmp_str[100];
 
-    expand_pid(input, offset);
+    replace_str(input, "$$", tmp_str);
 
     assert_str_equal(input, expected);
 }
