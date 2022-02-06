@@ -137,6 +137,20 @@ void replace_str_expand_pid_test4() {
     assert_str_equal(input, expected);
 }
 
+void replace_str_expand_pid_test5() {
+    char input[100] = "$$test$$test$$";
+    pid_t pid= getpid();
+    char pid_as_str[10];
+    sprintf(pid_as_str, "%i", pid);
+    char expected[100];
+    sprintf(expected, "%itest%itest%i", pid, pid, pid);
+    char tmp_str[100];
+
+    replace_str(input, "$$", pid_as_str, tmp_str);
+
+    assert_str_equal(input, expected);
+}
+
 // }}}
 // args_to_command_test {{{
 
@@ -290,6 +304,7 @@ void run_user_input_tests() {
     replace_str_expand_pid_test2();
     replace_str_expand_pid_test3();
     replace_str_expand_pid_test4();
+    replace_str_expand_pid_test5();
 
     args_to_command_test_cmd_only();
     args_to_command_test_cmd_with_args();
