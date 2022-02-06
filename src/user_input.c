@@ -11,11 +11,34 @@
 /* macros */
 #define PROMPT ": "     // input prompt on the command line
 
-/* types */
-/* function declarations */
-/* global variables */
 /* function definitions */
-void read_input(char* input_buffer, int num_chars, FILE *input, BgProcess* bg_processes) {
+
+/*
+*------------------------------------------------------------------------------
+* Function: read_input()
+*
+* Description:
+* read_input() is used for reading input from the user.
+* 
+* Function Arguments:
+*     @param input_buffer: A char array to read raw text into from stdin
+*     @param num_chars: The number of chars including the null terminator that
+*     can be read into the input_buffer.
+*     @param input: Should be stdin. This is left as a generic stream type for
+*     testing purposes.
+*     @param bg_processes: The global linked list of background process to kill
+*     in case the user inputs ctrl-d (i.e. EOF) and wants to exit the shell.
+*
+* Return Value:
+*     input_buffer will contain the contents read from the input.
+*------------------------------------------------------------------------------
+*/
+void read_input(
+    char input_buffer[],
+    int num_chars,
+    FILE *input,
+    BgProcess* bg_processes
+) {
     char *raw_input;
 
     memset(input_buffer, '\0', num_chars*sizeof(char));
@@ -30,7 +53,24 @@ void read_input(char* input_buffer, int num_chars, FILE *input, BgProcess* bg_pr
     }
 }
 
-void input_to_args(char* input_buffer, RawArgs* args) {
+/*
+*------------------------------------------------------------------------------
+* Function: input_to_args()
+*
+* Description:
+* input_to_args() is used for spliting the raw input read by the user at each
+* space into an array of known size.
+* 
+* Function Arguments:
+*     @param input_buffer: A char array containing raw text
+*     @param args: A struct to store the array and the size of the array
+*
+* Return Value:
+*     args is modified in-place. If the input_buffer is empty or starts with a
+*     comment character, then the size of args is set to 0.
+*------------------------------------------------------------------------------
+*/
+void input_to_args(char input_buffer[], RawArgs* args) {
     char *token;
     args->size = 0;
 
@@ -52,6 +92,22 @@ void input_to_args(char* input_buffer, RawArgs* args) {
 
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: args_to_command()
+*
+* Description:
+* args_to_command() is used for parsing the args struct into a command struct
+* that can be interpreted later by smallsh.
+* 
+* Function Arguments:
+*     @param args: An initialized RawArgs struct.
+*     @param cmd: A Command struct which will be initialized by the function
+*
+* Return Value:
+*     TODO add this
+*------------------------------------------------------------------------------
+*/
 void args_to_command(RawArgs* args, Command* cmd) {
     int cmd_argv_index = 0;
     cmd->argc = 0;

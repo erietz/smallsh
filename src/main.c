@@ -5,9 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* macros */
-/* types */
-/* function declarations */
 /* global variables */
 char input_buffer[MAX_CHARS];
 RawArgs args = {0};

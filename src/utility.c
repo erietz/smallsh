@@ -3,6 +3,26 @@
 #include <string.h>
 #include <unistd.h>
 
+/*
+*------------------------------------------------------------------------------
+* Function: replace_str()
+*
+* Description:
+* replace_str() is used for replacing each occurance of old_str with new_str
+* in input_str.
+* 
+* Function Arguments:
+*     @param input_str[]: An array of characters needing replacements. The
+*     array should be large enough to contain all of the substitutions of
+*     new_str.
+*     @param *old_str: A string literal of the text that needs replaced.
+*     @param *new_str: A string literal of the text that will replace old_str.
+*     @param tmp_str[]: An temporary array as large as input_str.
+*
+* Return Value:
+*     input_str is modified in-place.
+*------------------------------------------------------------------------------
+*/
 void replace_str(char input_str[], char *old_str, char *new_str, char tmp_str[]) {
     char* rep_loc;
     int offset, input_len, old_len, new_len;
