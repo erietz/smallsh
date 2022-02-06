@@ -52,7 +52,33 @@ void input_to_args_test_real_input() {
 }
 
 // }}}
-// expand_pid_test {{{
+// replace_str_test {{{
+
+void replace_str_test() {
+    char input[50] = "foo bar baz";
+    char *old = "foo";
+    char *new = "qux";
+    char tmp[50];
+
+    replace_str(input, old, new, tmp);
+    assert_str_equal(input, "qux bar baz");
+
+    replace_str(input, "baz", "spaz", tmp);
+    assert_str_equal(input, "qux bar spaz");
+
+    replace_str(input, "bar", "waldo", tmp);
+    assert_str_equal(input, "qux waldo spaz");
+
+    replace_str(input, "qux", "waldo", tmp);
+    assert_str_equal(input, "waldo waldo spaz");
+
+    replace_str(input, "waldo", "fred", tmp);
+    assert_str_equal(input, "fred fred spaz");
+
+    replace_str(input, "waldo", "fred", tmp);
+    assert_str_equal(input, "fred fred spaz");
+
+}
 
 void replace_str_expand_pid_test1() {
     char input[50] = "$$";
@@ -257,6 +283,7 @@ void run_user_input_tests() {
     input_to_args_test_comment_line();
     input_to_args_test_real_input();
 
+    replace_str_test();
     replace_str_expand_pid_test1();
     replace_str_expand_pid_test2();
     replace_str_expand_pid_test3();

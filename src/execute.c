@@ -66,7 +66,18 @@ int run_external_cmd(Command* cmd) {
             sa_sigint.sa_handler = SIG_DFL;     // default handling of ctrl-c
             sigaction(SIGINT, &sa_sigint, NULL);    // install handler
 
+            if (cmd->bg == 1 && cmd->input == NULL) {
+                puts("redirecting stdin to /dev/null");
+                cmd->input = "/dev/null";
+            }
+
+            if (cmd->bg == 1 && cmd->output == NULL) {
+                puts("redirecting stdout to /dev/null");
+                cmd->output = "/dev/null";
+            }
+
             exec_cmd(cmd);  // function only returns if error rwith exec
+
             perror("smallsh");
             fflush(stdout);
             return 2;
@@ -239,7 +250,11 @@ void status() {
 // Signal Handlers {{{
 
 void initialize_signal_handlers() {
-    /* sa_sigint.sa_handler = handle_SIGINT; */
+    /*
+    * Parent process and background child processes ignore SIGINT. Only a child
+    * process executing in the foreground will respond to SIGINT and is this
+    * signal is turned on (elsewhere) in the child process.
+    */
     sa_sigint.sa_handler = SIG_IGN;     // ignore ctrl-c
     sa_sigint.sa_flags = 0;
     // block all signals while sa_handler is running
@@ -254,10 +269,6 @@ void initialize_signal_handlers() {
     // install the handler
     sigaction(SIGTSTP, &sa_sigtstp, NULL);
 }
-
-/* // Handler for CTRL-C */
-/* static void handle_SIGINT(int sig_num) { */
-/* } */
 
 // Handler for CTRL-Z
 static void handle_SIGTSTP(int sig_num) {

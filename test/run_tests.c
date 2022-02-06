@@ -1,4 +1,5 @@
 #include "user_input_test.h"
+#include "execute_tests.h"
 #include "unit_test.h"
 #include <stdio.h>
 
@@ -22,6 +23,7 @@ int main() {
     test_statistics.failed = 0;
 
     run_user_input_tests();
+    run_execute_tests();
 
     print_statistics(&test_statistics);
     return 0;
