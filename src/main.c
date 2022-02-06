@@ -16,18 +16,16 @@ BgProcess* bg_processes;
 
 /* function definitions */
 int main(int argc, char *argv[]) {
-    bg_processes = malloc(sizeof(BgProcess));
-    bg_processes->pid = -1;
-    bg_processes->next = NULL;
+    bg_processes = create_bg_node(-1);
 
     initialize_signal_handlers();
 
     while (1) {
-        watch_bg_processes();
-        read_input(input_buffer, MAX_CHARS, stdin);
+        read_input(input_buffer, MAX_CHARS, stdin, bg_processes);
         input_to_args(input_buffer, &args);
         args_to_command(&args, &cmd);
-        dispatch_cmd(&cmd);
+        dispatch_cmd(&cmd, bg_processes);
+        watch_bg_processes(bg_processes);
     }
 
     return 0;

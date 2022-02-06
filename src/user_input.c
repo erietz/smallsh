@@ -15,7 +15,7 @@
 /* function declarations */
 /* global variables */
 /* function definitions */
-void read_input(char* input_buffer, int num_chars, FILE *input) {
+void read_input(char* input_buffer, int num_chars, FILE *input, BgProcess* bg_processes) {
     char *raw_input;
 
     memset(input_buffer, '\0', num_chars*sizeof(char));
@@ -26,7 +26,7 @@ void read_input(char* input_buffer, int num_chars, FILE *input) {
     if (raw_input == NULL) {
         // typing ctrl-d into a terminal sends EOF which causes fgets to return
         // null. In this case we can just exit the shell.
-        exit_shell();
+        exit_shell(bg_processes);
     }
 }
 

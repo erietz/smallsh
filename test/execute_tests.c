@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+// cd {{{
 void cd_test() {
     // ARRANGE
     char *home = getenv("HOME");
@@ -35,6 +36,7 @@ void cd_test() {
     assert_str_equal(cwd, "/usr/bin");
 
 }
+// }}}
 
 void status_test() {
 }

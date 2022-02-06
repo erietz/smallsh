@@ -4,17 +4,16 @@
 #include "user_input.h"
 #include "globals.h"
 
-extern BgProcess* bg_processes;
-
-void dispatch_cmd(Command* cmd);
-int run_external_cmd(Command* cmd);
+void dispatch_cmd(Command* cmd, BgProcess* head);
+int run_external_cmd(Command* cmd, BgProcess* head);
+BgProcess* create_bg_node(int pid);
 void append_bg_node(BgProcess* node, int pid);
 void free_process_list(BgProcess* node);
 void initialize_signal_handlers();
-void watch_bg_processes();
+void watch_bg_processes(BgProcess* head);
 
 int cd(char* path);
 void status();
-void exit_shell();
+void exit_shell(BgProcess* bg_processes);
 
 #endif // EXECUTE_H

@@ -17,7 +17,6 @@ static void exec_cmd(Command *cmd);
 static void handle_SIGTSTP(int sig_num);
 
 /* global variables */
-extern BgProcess* bg_processes;
 int current_process_in_background = 0;
 int last_cmd_exit_status = 0;
 struct sigaction sa_sigint = {{0}};
@@ -27,14 +26,14 @@ struct sigaction sa_sigtstp = {{0}};
 /* function definitions */
 // Executing commands {{{
 
-void dispatch_cmd(Command* command){
+void dispatch_cmd(Command* command, BgProcess* bg_processes){
     if (command->argc == 0)
         return;
 
     char *cmd = command->argv[0];
 
     if (strcmp(cmd, "exit") == 0) {
-        exit_shell();
+        exit_shell(bg_processes);
     } else if (strcmp(cmd, "status") == 0) {
         status();
     } else if (strcmp(cmd, "cd") == 0) {
@@ -44,12 +43,12 @@ void dispatch_cmd(Command* command){
             cd(command->argv[1]);
         }
     } else {
-        run_external_cmd(command);
+        run_external_cmd(command, bg_processes);
     }
 
 }
 
-int run_external_cmd(Command* cmd) {
+int run_external_cmd(Command* cmd, BgProcess* bg_processes) {
     int child_status;
     pid_t spawn_pid;
 
@@ -162,6 +161,13 @@ static void exec_cmd(Command* cmd) {
 // }}}
 // Managing background processes {{{
 
+BgProcess* create_bg_node(int pid) {
+    BgProcess* node = malloc(sizeof(BgProcess));
+    node->pid = pid;
+    node->next = NULL;
+    return node;
+}
+
 void append_bg_node(BgProcess* node, int pid) {
     if (node->pid == -1) {
         node->pid = pid;
@@ -189,6 +195,7 @@ void remove_bg_node(BgProcess* node, int pid) {
             prev->next = curr->next;
             if (curr->next != NULL) {
                 printf("freeing node with pid %d\n", curr->pid);
+                fflush(stdout);
                 free(curr);
             }
             break;
@@ -209,15 +216,10 @@ void free_process_list(BgProcess* node){
 
 // TODO: the head of the BgProcess list does not always remain the same if lots
 // of nodes are removed. How does this happen and does this matter?
-void watch_bg_processes() {
+void watch_bg_processes(BgProcess* bg_processes) {
     BgProcess* curr = bg_processes;
     BgProcess* tmp;
     int status;
-
-    if (curr->pid == -1) {
-        puts("nothing in background");
-        return;
-    }
 
     while (curr != NULL) {
         tmp = curr->next;
@@ -230,6 +232,7 @@ void watch_bg_processes() {
                 curr->pid,
                 WEXITSTATUS(status)
             );
+            fflush(stdout);
             remove_bg_node(bg_processes, curr->pid);
         }
         curr = tmp;
@@ -257,7 +260,7 @@ void watch_bg_processes() {
 
 // }}}
 // builtin commands {{{
-void exit_shell() {
+void exit_shell(BgProcess* bg_processes) {
     BgProcess *curr = bg_processes;
 
     // no background processes have been added

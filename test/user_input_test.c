@@ -1,6 +1,7 @@
 #include "../src/user_input.h"
 #include "../src/globals.h"
 #include "../src/utility.h"
+#include "../src/execute.h"
 #include "unit_test.h"
 #include <string.h>
 #include <sys/types.h>
@@ -13,8 +14,9 @@ void read_input_test() {
     char* input = "ls -al\n";
     FILE *stream = fmemopen(input, strlen(input), "r");
     char input_buffer[MAX_CHARS];
+    BgProcess* bg_processes = create_bg_node(-1);
 
-    read_input(input_buffer, MAX_CHARS, stream);
+    read_input(input_buffer, MAX_CHARS, stream, bg_processes);
 
     assert_str_equal(input_buffer, input);
 }
