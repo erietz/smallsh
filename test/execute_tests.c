@@ -44,8 +44,64 @@ void status_test() {
 void dispatch_cmd_test() {
 }
 
+// BgProcess List Tests {{{
+
+void append_bg_node_test() {
+    BgProcess* head = create_bg_node(-1);
+    append_bg_node(head, 2);
+    append_bg_node(head, 3);
+    append_bg_node(head, 4);
+
+    assert_int_equal(head->pid, -1);
+    assert_int_equal(head->next->pid, 2);
+    assert_int_equal(head->next->next->pid, 3);
+    assert_int_equal(head->next->next->next->pid, 4);
+
+    free_process_list(head);
+}
+
+void remove_bg_node_test() {
+    BgProcess* head = create_bg_node(-1);
+    append_bg_node(head, 2);
+    append_bg_node(head, 3);
+    append_bg_node(head, 4);
+
+    remove_bg_node(head, 2);
+    assert_int_equal(head->pid, -1);
+    assert_int_equal(head->next->pid, 3);
+    assert_int_equal(head->next->next->pid, 4);
+    if (head->next->next->next == NULL) {
+        assert_int_equal(1, 1);
+    } else {
+        assert_int_equal(0, 1);
+    }
+
+    remove_bg_node(head, 4);
+    assert_int_equal(head->pid, -1);
+    assert_int_equal(head->next->pid, 3);
+    if (head->next->next == NULL) {
+        assert_int_equal(1, 1);
+    } else {
+        assert_int_equal(0, 1);
+    }
+
+    remove_bg_node(head, 3);
+    assert_int_equal(head->pid, -1);
+    if (head->next == NULL) {
+        assert_int_equal(1, 1);
+    } else {
+        assert_int_equal(0, 1);
+    }
+
+    free_process_list(head);
+}
+
+// }}}
 
 void run_execute_tests() {
     cd_test();
     status_test();
+
+    append_bg_node_test();
+    remove_bg_node_test();
 }

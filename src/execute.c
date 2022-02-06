@@ -77,6 +77,7 @@ int run_external_cmd(Command* cmd, BgProcess* bg_processes) {
 
             perror("smallsh");
             fflush(stdout);
+            exit(1);
             return 2;
             break;
         default:
@@ -169,14 +170,7 @@ BgProcess* create_bg_node(int pid) {
 }
 
 void append_bg_node(BgProcess* node, int pid) {
-    if (node->pid == -1) {
-        node->pid = pid;
-        return;
-    }
-
-    BgProcess* new_node = malloc(sizeof(BgProcess));
-    new_node->pid = pid;
-    new_node->next = NULL;
+    BgProcess* new_node = create_bg_node(pid);
 
     while (node->next != NULL) {
         node = node->next;
@@ -185,21 +179,19 @@ void append_bg_node(BgProcess* node, int pid) {
     node->next = new_node;
 }
 
-void remove_bg_node(BgProcess* node, int pid) {
-    BgProcess* curr = node;
+void remove_bg_node(BgProcess* head, int pid) {
+    BgProcess* curr = head;
     BgProcess* prev;
 
     while (curr != NULL) {
-        prev = curr;
         if (curr->pid == pid) {
             prev->next = curr->next;
-            if (curr->next != NULL) {
-                printf("freeing node with pid %d\n", curr->pid);
-                fflush(stdout);
-                free(curr);
-            }
+            printf("freeing node with pid %d\n", curr->pid);
+            fflush(stdout);
+            free(curr);
             break;
         }
+        prev = curr;
         curr = curr->next;
     }
 }
@@ -214,14 +206,18 @@ void free_process_list(BgProcess* node){
     }
 }
 
-// TODO: the head of the BgProcess list does not always remain the same if lots
-// of nodes are removed. How does this happen and does this matter?
 void watch_bg_processes(BgProcess* bg_processes) {
     BgProcess* curr = bg_processes;
     BgProcess* tmp;
     int status;
 
     while (curr != NULL) {
+        // head of list
+        if (curr->pid == -1) {
+            curr = curr->next;
+            continue;
+        }
+
         tmp = curr->next;
 
         int pid = waitpid(curr->pid, &status, WNOHANG);
@@ -264,10 +260,13 @@ void exit_shell(BgProcess* bg_processes) {
     BgProcess *curr = bg_processes;
 
     // no background processes have been added
-    if (curr->pid == -1)
-        exit(0);
 
     while (curr != NULL) {
+        if (curr->pid == -1) {
+            curr = curr->next;
+            continue;
+        }
+
         // TODO: delete this line
         printf("killing process %i\n", curr->pid);
         fflush(stdout);

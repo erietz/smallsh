@@ -16,7 +16,7 @@ void replace_str(char input_str[], char *old_str, char *new_str, char tmp_str[])
         tmp_str[offset] = '\0';
         strncat(tmp_str, new_str, new_len);
         strncat(tmp_str, rep_loc + old_len, input_len - offset - old_len);
-        strncpy(input_str, tmp_str, input_len + new_len + 1);
+        strncpy(input_str, tmp_str, input_len + new_len + 2); // TODO check why 2 here
     }
 }
 
