@@ -17,9 +17,9 @@ static void exec_cmd(Command *cmd);
 static void handle_SIGTSTP(int sig_num);
 
 /* global variables */
+extern BgProcess* bg_processes;
 int current_process_in_background = 0;
 int last_cmd_exit_status = 0;
-BgProcess bg_processes = { .pid = -1, .next = NULL, };
 struct sigaction sa_sigint = {{0}};
 struct sigaction sa_sigtstp = {{0}};
 
@@ -67,12 +67,10 @@ int run_external_cmd(Command* cmd) {
             sigaction(SIGINT, &sa_sigint, NULL);    // install handler
 
             if (cmd->bg == 1 && cmd->input == NULL) {
-                puts("redirecting stdin to /dev/null");
                 cmd->input = "/dev/null";
             }
 
             if (cmd->bg == 1 && cmd->output == NULL) {
-                puts("redirecting stdout to /dev/null");
                 cmd->output = "/dev/null";
             }
 
@@ -89,30 +87,17 @@ int run_external_cmd(Command* cmd) {
             if (cmd->bg == 1 && current_process_in_background == 0) {
                 // Execute in the background
                 waitpid(spawn_pid, &child_status, WNOHANG);
-                printf("Background pid: %d\n", spawn_pid);
+                printf("Running %s in background with pid %d\n", cmd->argv[0], spawn_pid);
                 fflush(stdout);
-                append_bg_node(&bg_processes, spawn_pid);
+                append_bg_node(bg_processes, spawn_pid);
             } else {
                 // Execute and block in the foreground
                 waitpid(spawn_pid, &child_status, 0);
                 last_cmd_exit_status = child_status;
             }
-            fflush(stdout);
 
             return child_status;
             break;
-
-            /*
-            Consider storing the PIDs of non-completed background processes in
-            an array. Then every time BEFORE returning access to the command
-            line to the user, you can check the status of these processes using
-            waitpid(...NOHANG...). 
-
-            Alternatively, you may use a signal handler to immediately wait()
-            for child processes that terminate, as opposed to periodically
-            checking a list of started background processes
-
-        */
     }
 }
 
@@ -194,6 +179,24 @@ void append_bg_node(BgProcess* node, int pid) {
     node->next = new_node;
 }
 
+void remove_bg_node(BgProcess* node, int pid) {
+    BgProcess* curr = node;
+    BgProcess* prev;
+
+    while (curr != NULL) {
+        prev = curr;
+        if (curr->pid == pid) {
+            prev->next = curr->next;
+            if (curr->next != NULL) {
+                printf("freeing node with pid %d\n", curr->pid);
+                free(curr);
+            }
+            break;
+        }
+        curr = curr->next;
+    }
+}
+
 void free_process_list(BgProcess* node){
     BgProcess* tmp;
 
@@ -204,10 +207,58 @@ void free_process_list(BgProcess* node){
     }
 }
 
+// TODO: the head of the BgProcess list does not always remain the same if lots
+// of nodes are removed. How does this happen and does this matter?
+void watch_bg_processes() {
+    BgProcess* curr = bg_processes;
+    BgProcess* tmp;
+    int status;
+
+    if (curr->pid == -1) {
+        puts("nothing in background");
+        return;
+    }
+
+    while (curr != NULL) {
+        tmp = curr->next;
+
+        int pid = waitpid(curr->pid, &status, WNOHANG);
+
+        if (pid > 0) {
+            printf(
+                "Process %d completed. Exit status: %d\n",
+                curr->pid,
+                WEXITSTATUS(status)
+            );
+            remove_bg_node(bg_processes, curr->pid);
+        }
+        curr = tmp;
+
+        /* if (WIFSIGNALED(status)) { */
+        /*     printf("%d killed by signal %d %s\n", */
+        /*         curr->pid, */
+        /*         WTERMSIG(status), */
+        /*         strsignal(WTERMSIG(status)) */
+        /*      ); */
+        /*     remove_bg_node(&bg_processes, curr->pid); */
+        /* } else if (WIFEXITED(status)) { */
+        /*     printf("%d exited: status = %d\n", curr->pid, WEXITSTATUS(status)); */
+        /*     remove_bg_node(&bg_processes, curr->pid); */
+        /* } else if (WIFSTOPPED(status)) { */
+        /*     printf("%d stopped by signal %d %s\n", */
+        /*         curr->pid, */
+        /*         WSTOPSIG(status), */
+        /*         strsignal(WSTOPSIG(status)) */
+        /*     ); */
+        /* } */
+
+    }
+}
+
 // }}}
 // builtin commands {{{
 void exit_shell() {
-    BgProcess *curr = &bg_processes;
+    BgProcess *curr = bg_processes;
 
     // no background processes have been added
     if (curr->pid == -1)

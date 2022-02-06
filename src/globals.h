@@ -20,4 +20,9 @@ typedef struct Command {
     int bg;
 } Command;
 
+typedef struct BgProcess {
+    int pid;
+    struct BgProcess* next;
+} BgProcess;
+
 #endif // GLOBALS_H
