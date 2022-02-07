@@ -251,6 +251,23 @@ void args_to_command_test_input_and_output_redirection(){
     assert_int_equal(cmd.bg, 0);
 }
 
+void args_to_command_test_input_after_output_redirection() {
+    RawArgs args = {
+        .size = 5,
+        .items = {"sort", ">", "output.txt", "<", "input.txt"}
+    };
+    Command cmd = {0};
+
+    args_to_command(&args, &cmd);
+
+    assert_int_equal(cmd.argc, 1);
+    assert_str_equal(cmd.argv[0], "sort");
+    assert_str_equal(cmd.input, "input.txt");
+    assert_str_equal(cmd.output, "output.txt");
+    assert_int_equal(cmd.bg, 0);
+
+}
+
 void args_to_command_test_full_syntax(){
     // ARRANGE
     RawArgs args = {
@@ -310,6 +327,7 @@ void run_user_input_tests() {
     args_to_command_test_cmd_with_args();
     args_to_command_test_input_redirection();
     args_to_command_test_input_and_output_redirection();
+    args_to_command_test_input_after_output_redirection();
     args_to_command_test_full_syntax();
     args_to_command_test_background_only();
 

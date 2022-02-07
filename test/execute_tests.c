@@ -35,6 +35,9 @@ void cd_test() {
     getcwd(cwd, sizeof(cwd));
     assert_str_equal(cwd, "/usr/bin");
 
+    // Clean up for remaining tests
+    cd(wd_save);
+
 }
 // }}}
 

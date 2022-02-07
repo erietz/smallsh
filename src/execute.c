@@ -13,11 +13,10 @@
 /* types */
 /* function declarations */
 static void exec_cmd(Command *cmd);
-/* static void handle_SIGINT(int sig_num); */
 static void handle_SIGTSTP(int sig_num);
 
 /* global variables */
-int current_process_in_background = 0;
+int foreground_only_mode = 0;
 int last_cmd_exit_status = 0;
 struct sigaction sa_sigint = {{0}};
 struct sigaction sa_sigtstp = {{0}};
@@ -48,7 +47,7 @@ void dispatch_cmd(Command* command, BgProcess* bg_processes){
 
 }
 
-int run_external_cmd(Command* cmd, BgProcess* bg_processes) {
+void run_external_cmd(Command* cmd, BgProcess* bg_processes) {
     int child_status;
     pid_t spawn_pid;
 
@@ -57,13 +56,20 @@ int run_external_cmd(Command* cmd, BgProcess* bg_processes) {
         case -1:
             perror("fork()\n");
             fflush(stdout);
-            return 2;
+            exit(1);
             break;
         case 0:
             // child process
 
-            sa_sigint.sa_handler = SIG_DFL;     // default handling of ctrl-c
-            sigaction(SIGINT, &sa_sigint, NULL);    // install handler
+            // ignore ctrl-z
+            sa_sigtstp.sa_handler = SIG_IGN;
+            sigaction(SIGTSTP, &sa_sigtstp, NULL);
+
+            if (cmd->bg == 0) {
+                // make ctrl-c interupt the child process
+                sa_sigint.sa_handler = SIG_DFL;     // default handling of ctrl-c
+                sigaction(SIGINT, &sa_sigint, NULL);    // install handler
+            }
 
             if (cmd->bg == 1 && cmd->input == NULL) {
                 cmd->input = "/dev/null";
@@ -78,13 +84,12 @@ int run_external_cmd(Command* cmd, BgProcess* bg_processes) {
             perror("smallsh");
             fflush(stdout);
             exit(1);
-            return 2;
             break;
         default:
             // parent process (default = spawn_pid = the process id of the
             // child)
 
-            if (cmd->bg == 1 && current_process_in_background == 0) {
+            if (cmd->bg == 1 && foreground_only_mode == 0) {
                 // Execute in the background
                 waitpid(spawn_pid, &child_status, WNOHANG);
                 printf("Running %s in background with pid %d\n", cmd->argv[0], spawn_pid);
@@ -95,8 +100,6 @@ int run_external_cmd(Command* cmd, BgProcess* bg_processes) {
                 waitpid(spawn_pid, &child_status, 0);
                 last_cmd_exit_status = child_status;
             }
-
-            return child_status;
             break;
     }
 }
@@ -114,37 +117,37 @@ static void exec_cmd(Command* cmd) {
 
     // Redirect stdin to input file
     if (cmd->input != NULL) {
-        // open the file to for the process to read from
+        // open the file which the process will read from
         input_fd = open(cmd->input, O_RDONLY);
         if (input_fd == -1) {
-            perror("open()");
+            printf("cannot open %s for input\n", cmd->input);
             fflush(stdout);
             exit(1);
         }
 
         // make stdin refer to input_fd
-        int result = dup2(input_fd, 0);
+        int result = dup2(input_fd, STDIN_FILENO);
         if (result == -1) {
             perror("dup2()");
             fflush(stdout);
             exit(1);
         }
 
-        // close the file descriptor after exec function finishes
+        // close the input file descriptor after exec function finishes
         fcntl(input_fd, F_SETFD, FD_CLOEXEC);
     }
 
     // Redirect stdout to output file
     if (cmd->output != NULL) {
-        output_fd = open(cmd->output, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        output_fd = open(cmd->output, O_WRONLY | O_CREAT | O_TRUNC, 0644); // TODO is this the correct permission
         if (output_fd == -1) {
-            perror("open()");
+            printf("cannot open %s for output\n", cmd->output);
             fflush(stdout);
             exit(1);
         }
 
         // make stdout refer to output_fd
-        int result = dup2(output_fd, 1);
+        int result = dup2(output_fd, STDOUT_FILENO);
         if (result == -1) {
             perror("dup2()");
             fflush(stdout);
@@ -186,8 +189,6 @@ void remove_bg_node(BgProcess* head, int pid) {
     while (curr != NULL) {
         if (curr->pid == pid) {
             prev->next = curr->next;
-            printf("freeing node with pid %d\n", curr->pid);
-            fflush(stdout);
             free(curr);
             break;
         }
@@ -211,15 +212,18 @@ void watch_bg_processes(BgProcess* bg_processes) {
     BgProcess* tmp;
     int status;
 
+    // loop through each bg_process and remove node if process completed
     while (curr != NULL) {
-        // head of list
+        // skip head of list with phony pid
         if (curr->pid == -1) {
             curr = curr->next;
             continue;
         }
 
+        // save curr->next as the loop counter as curr may be removed
         tmp = curr->next;
 
+        // waitpid returns 0 if the process is not completed
         int pid = waitpid(curr->pid, &status, WNOHANG);
 
         if (pid > 0) {
@@ -305,35 +309,45 @@ void status() {
 void initialize_signal_handlers() {
     /*
     * Parent process and background child processes ignore SIGINT. Only a child
-    * process executing in the foreground will respond to SIGINT and is this
-    * signal is turned on (elsewhere) in the child process.
+    * process executing in the foreground will respond to SIGINT. This signal
+    * is turned on (elsewhere) in the child process.
     */
+
+    // handle ctrl-c------------------------------------------------------------
     sa_sigint.sa_handler = SIG_IGN;     // ignore ctrl-c
     sa_sigint.sa_flags = 0;
+
     // block all signals while sa_handler is running
     sigfillset(&sa_sigint.sa_mask);
+
     // install the handler
     sigaction(SIGINT, &sa_sigint, NULL);
 
+
+    // handle ctrl-z------------------------------------------------------------
     sa_sigtstp.sa_handler = handle_SIGTSTP;
-    sa_sigtstp.sa_flags = 0;
+
+    // automatic restart of the interrupted system call or library function
+    // after the signal handler gets done.
+    sa_sigtstp.sa_flags = SA_RESTART;
+
     // block all signals while sa_handler is running
     sigfillset(&sa_sigtstp.sa_mask);
+
     // install the handler
     sigaction(SIGTSTP, &sa_sigtstp, NULL);
 }
 
-// Handler for CTRL-Z
+// Custom handler for CTRL-Z
 static void handle_SIGTSTP(int sig_num) {
-    // TODO: this breaks if pressing ctrl-z more than once since it puts
-    // smallsh itself in the background
-    if (current_process_in_background == 0) {
-        char *message = "Suspending current job\n";
-        write(STDOUT_FILENO, message, 24);
-        current_process_in_background = 1;
+    if (foreground_only_mode == 0) {
+        char *message = "Entering foreground-only mode (& is now ignored)\n";
+        write(STDOUT_FILENO, message, 50);
+        foreground_only_mode = 1;
     } else {
-        char *message = "Suspended jobs, cannot put process in the background\n";
-        write(STDOUT_FILENO, message, 54);
+        char *message = "Exiting foreground-only mode\n";
+        write(STDOUT_FILENO, message, 30);
+        foreground_only_mode = 0;
     }
 }
 

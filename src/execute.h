@@ -5,7 +5,7 @@
 #include "globals.h"
 
 void dispatch_cmd(Command* cmd, BgProcess* head);
-int run_external_cmd(Command* cmd, BgProcess* head);
+void run_external_cmd(Command* cmd, BgProcess* head);
 BgProcess* create_bg_node(int pid);
 void append_bg_node(BgProcess* node, int pid);
 void remove_bg_node(BgProcess* head, int pid);
