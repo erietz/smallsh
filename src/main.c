@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
         input_to_args(input_buffer, &args);
         args_to_command(&args, &cmd);
         dispatch_cmd(&cmd, bg_processes);
-        watch_bg_processes(bg_processes);
+        cleanup_bg_processes(bg_processes);
     }
 
     return 0;

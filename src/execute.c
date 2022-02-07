@@ -14,6 +14,7 @@
 /* function declarations */
 static void exec_cmd(Command *cmd);
 static void handle_SIGTSTP(int sig_num);
+static void print_signal_status(int pid, int status);
 
 /* global variables */
 int foreground_only_mode = 0;
@@ -71,11 +72,11 @@ void run_external_cmd(Command* cmd, BgProcess* bg_processes) {
                 sigaction(SIGINT, &sa_sigint, NULL);    // install handler
             }
 
-            if (cmd->bg == 1 && cmd->input == NULL) {
+            if (cmd->bg == 1 && cmd->input == NULL && foreground_only_mode == 0) {
                 cmd->input = "/dev/null";
             }
 
-            if (cmd->bg == 1 && cmd->output == NULL) {
+            if (cmd->bg == 1 && cmd->output == NULL && foreground_only_mode == 0) {
                 cmd->output = "/dev/null";
             }
 
@@ -98,7 +99,8 @@ void run_external_cmd(Command* cmd, BgProcess* bg_processes) {
             } else {
                 // Execute and block in the foreground
                 waitpid(spawn_pid, &child_status, 0);
-                last_cmd_exit_status = child_status;
+                print_signal_status(spawn_pid, child_status);
+                last_cmd_exit_status = WEXITSTATUS(child_status);
             }
             break;
     }
@@ -207,7 +209,7 @@ void free_process_list(BgProcess* node){
     }
 }
 
-void watch_bg_processes(BgProcess* bg_processes) {
+void cleanup_bg_processes(BgProcess* bg_processes) {
     BgProcess* curr = bg_processes;
     BgProcess* tmp;
     int status;
@@ -343,11 +345,23 @@ static void handle_SIGTSTP(int sig_num) {
     if (foreground_only_mode == 0) {
         char *message = "Entering foreground-only mode (& is now ignored)\n";
         write(STDOUT_FILENO, message, 50);
+        fflush(stdout);
         foreground_only_mode = 1;
     } else {
         char *message = "Exiting foreground-only mode\n";
         write(STDOUT_FILENO, message, 30);
+        fflush(stdout);
         foreground_only_mode = 0;
+    }
+}
+
+static void print_signal_status(int pid, int status) {
+    if (WIFSIGNALED(status)) {
+        printf("%d killed by signal %d %s\n",
+            pid,
+            WTERMSIG(status),
+            strsignal(WTERMSIG(status))
+         );
     }
 }
 

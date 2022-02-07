@@ -11,7 +11,7 @@ void append_bg_node(BgProcess* node, int pid);
 void remove_bg_node(BgProcess* head, int pid);
 void free_process_list(BgProcess* node);
 void initialize_signal_handlers();
-void watch_bg_processes(BgProcess* head);
+void cleanup_bg_processes(BgProcess* head);
 
 int cd(char* path);
 void status();
