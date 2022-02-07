@@ -2,12 +2,19 @@
 #include "execute.h"
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>     // exit
+#include <stdlib.h>
 #include <fcntl.h>      // file control
 #include <sys/wait.h>   // waitpid
 #include <unistd.h>     // execvp, fork, getpid
-#include <signal.h>
+#include <signal.h>     // handling ctrl-c and ctrl-z
 
+
+/*
+* TODO:
+*   - not printing signal information if background process killed by signal
+*   - background processes are being killed by repeated ctrl-c
+*   - add docstrings and clean up
+*/
 
 /* macros */
 /* types */
