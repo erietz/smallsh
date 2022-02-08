@@ -14,7 +14,7 @@ void initialize_signal_handlers();
 void cleanup_bg_processes(BgProcess* head);
 
 int cd(char* path);
-void status();
+void print_status(int status);
 void exit_shell(BgProcess* bg_processes);
 
 #endif // EXECUTE_H

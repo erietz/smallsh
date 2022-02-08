@@ -12,13 +12,11 @@
 /* function declarations */
 static void exec_cmd(Command *cmd);
 static void handle_SIGTSTP(int sig_num);
-static void print_signal_status(int pid, int status);
 
 
 /* global variables */
 int foreground_only_mode = 0;
-int last_cmd_exit_status = 0;
-int last_cmd_signal_status = 0;
+int last_cmd_status = 0;
 struct sigaction sa_sigint = {{0}};
 struct sigaction sa_sigtstp = {{0}};
 
@@ -51,7 +49,7 @@ void dispatch_cmd(Command* command, BgProcess* bg_processes){
     if (strcmp(cmd, "exit") == 0) {
         exit_shell(bg_processes);
     } else if (strcmp(cmd, "status") == 0) {
-        status();
+        print_status(last_cmd_status);
     } else if (strcmp(cmd, "cd") == 0) {
         if (command->argc == 1) {
             cd(NULL);
@@ -81,7 +79,7 @@ void dispatch_cmd(Command* command, BgProcess* bg_processes){
 *     the shell.
 *
 * Return Value:
-*     The global variable last_cmd_exit_status is updated for any process that
+*     The global variable last_cmd_status is updated for any process that
 *     gets executed in the foreground.
 *------------------------------------------------------------------------------
 */
@@ -101,6 +99,7 @@ void run_external_cmd(Command* cmd, BgProcess* bg_processes) {
 
             // ignore ctrl-z
             sa_sigtstp.sa_handler = SIG_IGN;
+            sa_sigtstp.sa_flags = 0;
             sigaction(SIGTSTP, &sa_sigtstp, NULL);
 
             if (cmd->bg == 0) {
@@ -119,7 +118,7 @@ void run_external_cmd(Command* cmd, BgProcess* bg_processes) {
 
             exec_cmd(cmd);  // function only returns if error rwith exec
 
-            perror("smallsh");
+            perror(cmd->argv[0]);
             fflush(stdout);
             exit(1);
             break;
@@ -136,11 +135,12 @@ void run_external_cmd(Command* cmd, BgProcess* bg_processes) {
             } else {
                 // Execute and block in the foreground
                 waitpid(spawn_pid, &child_status, 0);
-
-                /* print_signal_status(spawn_pid, child_status); */
-
-                last_cmd_signal_status = WIFSIGNALED(child_status);
-                last_cmd_exit_status = WEXITSTATUS(child_status);
+                last_cmd_status = child_status;
+                if (WIFSIGNALED(child_status)) {
+                    printf("process %d terminated by signal %d\n",
+                        spawn_pid, child_status
+                    );
+                }
             }
             break;
     }
@@ -351,24 +351,11 @@ void cleanup_bg_processes(BgProcess* bg_processes) {
         int pid = waitpid(curr->pid, &status, WNOHANG);
 
         if (pid > 0) {
-            printf(
-                "Process %d completed. Exit status: %d\n",
-                curr->pid,
-                WEXITSTATUS(status)
-            );
+            print_status(curr->pid);
             fflush(stdout);
             remove_bg_node(bg_processes, curr->pid);
         }
         curr = tmp;
-
-        if (WIFSIGNALED(status)) {
-            printf("%d killed by signal %d %s\n",
-                curr->pid,
-                WTERMSIG(status),
-                strsignal(WTERMSIG(status))
-             );
-        } else if (WIFEXITED(status)) {
-            printf("%d exited: status = %d\n", curr->pid, WEXITSTATUS(status));
 
     }
 }
@@ -440,15 +427,28 @@ int cd(char *path) {
 
 /*
 *------------------------------------------------------------------------------
-* Function: status()
+* Function: print_status()
 *
 * Description:
-* status() is used for printing out the status for the last command executed in
-* the foreground that has completed.
+* print_status() is used for printing out a message regarding a status of a
+* process. That is, whether the process exited properly or was terminated by a
+* signal.
+*
+* Function Arguments:
+*   @param status: An integer returned by wait() or waitpid()
 *------------------------------------------------------------------------------
 */
-void status() {
-    printf("Last command exit status %d\n", last_cmd_exit_status);
+void print_status(int status) {
+    if (WIFSIGNALED(status)) {
+        printf("terminated by signal %d.\n",
+            WTERMSIG(status)
+         );
+    } else if (WIFEXITED(status)) {
+        printf("exit value %d\n",
+            WEXITSTATUS(status)
+        );
+    }
+
     fflush(stdout);
 }
 
@@ -503,7 +503,23 @@ void initialize_signal_handlers() {
     sigaction(SIGTSTP, &sa_sigtstp, NULL);
 }
 
-// Custom handler for CTRL-Z
+/*
+*------------------------------------------------------------------------------
+* Function: handle_SIGTSTP()
+*
+* Description:
+* handle_SIGTSTP() is used as a custom handler by the parent process for the
+* SIGTSTP signal. The child process must remove this custom handler.
+*
+* Function Arguments:
+*     @param sig_num: The integer signal number that is being handled. Since
+*     this function as passed as a pointer to another function, sig_int is not
+*     literally passed.
+*
+* Return Value:
+*     The global boolean variable foreground_only_mode is toggled.
+*------------------------------------------------------------------------------
+*/
 static void handle_SIGTSTP(int sig_num) {
     if (foreground_only_mode == 0) {
         char *message = "Entering foreground-only mode (& is now ignored)\n";
@@ -515,17 +531,6 @@ static void handle_SIGTSTP(int sig_num) {
         write(STDOUT_FILENO, message, 30);
         fflush(stdout);
         foreground_only_mode = 0;
-    }
-}
-
-// TODO fix this
-static void print_signal_status(int pid, int status) {
-    if (WIFSIGNALED(status)) {
-        printf("process %d terminated by signal %d. %s\n",
-            pid,
-            WTERMSIG(status),
-            strsignal(WTERMSIG(status))
-         );
     }
 }
 
