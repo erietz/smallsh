@@ -2,8 +2,6 @@
 #include "user_input.h"
 #include "globals.h"
 #include "execute.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 /* global variables */
 char input_buffer[MAX_CHARS];
