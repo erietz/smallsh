@@ -351,6 +351,7 @@ void cleanup_bg_processes(BgProcess* bg_processes) {
         int pid = waitpid(curr->pid, &status, WNOHANG);
 
         if (pid > 0) {
+            printf("background pid %d is done: ", curr->pid);
             print_status(status);
             fflush(stdout);
             remove_bg_node(bg_processes, curr->pid);
