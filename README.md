@@ -34,3 +34,9 @@ The general syntax of a command line is:
   characters, and a maximum of 512 arguments.
 - You do not need to do any error checking on the syntax of the command line.
 
+# FIXME
+
+1. hitting ctrl-c should display "terminated by process"
+    - this could be the last cmd exit status when typing status
+2. hitting ctrl-z does not restore cmd access without pressing enter again
+3. background processes are being killed by repeated ctrl-c

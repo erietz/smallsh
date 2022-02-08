@@ -9,30 +9,39 @@
 #include <signal.h>     // handling ctrl-c and ctrl-z
 
 
-/*
-* TODO:
-*   - not printing signal information if background process killed by signal
-*   - background processes are being killed by repeated ctrl-c
-*   - add docstrings and clean up
-*/
-
-/* macros */
-/* types */
 /* function declarations */
 static void exec_cmd(Command *cmd);
 static void handle_SIGTSTP(int sig_num);
 static void print_signal_status(int pid, int status);
 
+
 /* global variables */
 int foreground_only_mode = 0;
 int last_cmd_exit_status = 0;
+int last_cmd_signal_status = 0;
 struct sigaction sa_sigint = {{0}};
 struct sigaction sa_sigtstp = {{0}};
 
 
 /* function definitions */
-// Executing commands {{{
 
+// Executing commands {{{
+/*
+*------------------------------------------------------------------------------
+* Function: dispatch_cmd()
+*
+* Description:
+* dispatch_cmd() is used for taking an initialized Command struct and sending
+* off the command to be executed elsewhere (i.e. via a built-in command or via
+* a child process).
+* 
+* Function Arguments:
+*     @param command: An Command struct which has been initialized by the
+*     args_to_command function.
+*     @param bg_processes: The linked list of background process running in the
+*     shell.
+*------------------------------------------------------------------------------
+*/
 void dispatch_cmd(Command* command, BgProcess* bg_processes){
     if (command->argc == 0)
         return;
@@ -55,6 +64,27 @@ void dispatch_cmd(Command* command, BgProcess* bg_processes){
 
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: run_external_cmd()
+*
+* Description:
+* run_external_cmd() is used for running any commands that are not built-in
+* commands as a child process. NOTE: If a command is to be executed as a
+* background process, and the input and/or output members of the struct are not
+* set for redirection, they will be automatically redirected to /dev/null.
+*
+* Function Arguments:
+*     @param cmd: An initialized Command obtained from the args_to_command
+*     function.
+*     @param bg_processes: The linked list of background processes being run in
+*     the shell.
+*
+* Return Value:
+*     The global variable last_cmd_exit_status is updated for any process that
+*     gets executed in the foreground.
+*------------------------------------------------------------------------------
+*/
 void run_external_cmd(Command* cmd, BgProcess* bg_processes) {
     int child_status;
     pid_t spawn_pid;
@@ -106,13 +136,30 @@ void run_external_cmd(Command* cmd, BgProcess* bg_processes) {
             } else {
                 // Execute and block in the foreground
                 waitpid(spawn_pid, &child_status, 0);
-                print_signal_status(spawn_pid, child_status);
+
+                /* print_signal_status(spawn_pid, child_status); */
+
+                last_cmd_signal_status = WIFSIGNALED(child_status);
                 last_cmd_exit_status = WEXITSTATUS(child_status);
             }
             break;
     }
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: exec_cmd()
+*
+* Description:
+* exec_cmd() is used for executing a given command in the current process.
+* 
+* Function Arguments:
+*     @param cmd: An initialized Command struct.
+*
+* Return Value:
+*     The function will only return if the command does not exit successfully.
+*------------------------------------------------------------------------------
+*/
 static void exec_cmd(Command* cmd) {
     int input_fd = -1;
     int output_fd = -1;
@@ -170,10 +217,25 @@ static void exec_cmd(Command* cmd) {
     // execute the command from the argument vector from files in PATH
     execvp(argv[0], argv);
 }
-
 // }}}
 // Managing background processes {{{
 
+/*
+*------------------------------------------------------------------------------
+* Function: create_bg_node()
+*
+* Description:
+* create_bg_node() is used for creating a new dynamically allocated background
+* node to be used in a linked list. The node will need to be freed. NOTE: The
+* head of the linked list must always have a phony pid of -1.
+* 
+* Function Arguments:
+*     @param pid: The process id of the background process
+*
+* Return Value:
+*     @return BgProcess: A pointer to a BgProcess struct node.
+*------------------------------------------------------------------------------
+*/
 BgProcess* create_bg_node(int pid) {
     BgProcess* node = malloc(sizeof(BgProcess));
     node->pid = pid;
@@ -181,6 +243,21 @@ BgProcess* create_bg_node(int pid) {
     return node;
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: append_bg_node()
+*
+* Description:
+* append_bg_node() is used for creating a new background process node and
+* adding it the then end of a linked list. NOTE: The head of the linked list
+* must always have a phony pid of -1.
+
+*
+* Function Arguments:
+*     @param node: The head of the linked list
+*     @param pid: The process id of the node that will be appended.
+*------------------------------------------------------------------------------
+*/
 void append_bg_node(BgProcess* node, int pid) {
     BgProcess* new_node = create_bg_node(pid);
 
@@ -191,6 +268,20 @@ void append_bg_node(BgProcess* node, int pid) {
     node->next = new_node;
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: remove_bg_node()
+*
+* Description:
+* remove_bg_node() is used for removing and freeing a node in a linked list of
+* background processes. NOTE: The head of the linked list must always have a
+* phony pid of -1.
+*
+* Function Arguments:
+*     @param head: The head of the linked list
+*     @param pid: The process id of the node to be removed.
+*------------------------------------------------------------------------------
+*/
 void remove_bg_node(BgProcess* head, int pid) {
     BgProcess* curr = head;
     BgProcess* prev;
@@ -206,6 +297,17 @@ void remove_bg_node(BgProcess* head, int pid) {
     }
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: free_process_list()
+*
+* Description:
+* free_process_list() is used for completely freeing a linked list.
+* 
+* Function Arguments:
+*     @param node: The head of the linked list to be freed.
+*------------------------------------------------------------------------------
+*/
 void free_process_list(BgProcess* node){
     BgProcess* tmp;
 
@@ -216,6 +318,19 @@ void free_process_list(BgProcess* node){
     }
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: cleanup_bg_processes()
+*
+* Description:
+* cleanup_bg_processes() is used for watching each process in the linked list
+* of background processes, printing a message about the exit status of the
+* process, and removing them if they have completed.
+* 
+* Function Arguments:
+*     @param bg_processes: The head of the linked list of background processes.
+*------------------------------------------------------------------------------
+*/
 void cleanup_bg_processes(BgProcess* bg_processes) {
     BgProcess* curr = bg_processes;
     BgProcess* tmp;
@@ -246,33 +361,35 @@ void cleanup_bg_processes(BgProcess* bg_processes) {
         }
         curr = tmp;
 
-        /* if (WIFSIGNALED(status)) { */
-        /*     printf("%d killed by signal %d %s\n", */
-        /*         curr->pid, */
-        /*         WTERMSIG(status), */
-        /*         strsignal(WTERMSIG(status)) */
-        /*      ); */
-        /*     remove_bg_node(&bg_processes, curr->pid); */
-        /* } else if (WIFEXITED(status)) { */
-        /*     printf("%d exited: status = %d\n", curr->pid, WEXITSTATUS(status)); */
-        /*     remove_bg_node(&bg_processes, curr->pid); */
-        /* } else if (WIFSTOPPED(status)) { */
-        /*     printf("%d stopped by signal %d %s\n", */
-        /*         curr->pid, */
-        /*         WSTOPSIG(status), */
-        /*         strsignal(WSTOPSIG(status)) */
-        /*     ); */
-        /* } */
+        if (WIFSIGNALED(status)) {
+            printf("%d killed by signal %d %s\n",
+                curr->pid,
+                WTERMSIG(status),
+                strsignal(WTERMSIG(status))
+             );
+        } else if (WIFEXITED(status)) {
+            printf("%d exited: status = %d\n", curr->pid, WEXITSTATUS(status));
 
     }
 }
 
 // }}}
 // builtin commands {{{
+
+/*
+*------------------------------------------------------------------------------
+* Function: exit_shell()
+*
+* Description:
+* exit_shell() is used for exiting the shell.
+* 
+* Function Arguments:
+*     @param bg_processes: The linked list of background processes to kill
+*     before exiting.
+*------------------------------------------------------------------------------
+*/
 void exit_shell(BgProcess* bg_processes) {
     BgProcess *curr = bg_processes;
-
-    // no background processes have been added
 
     while (curr != NULL) {
         if (curr->pid == -1) {
@@ -280,8 +397,6 @@ void exit_shell(BgProcess* bg_processes) {
             continue;
         }
 
-        // TODO: delete this line
-        printf("killing process %i\n", curr->pid);
         fflush(stdout);
         kill(curr->pid, SIGKILL);
         curr = curr->next;
@@ -290,6 +405,22 @@ void exit_shell(BgProcess* bg_processes) {
     exit(0);
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: cd()
+*
+* Description:
+* cd() is used for changing the working directory of the shell to the provided
+* path.
+* 
+* Function Arguments:
+*     @param path: A relative or absolute path of the destination directory. If
+*     path is NULL, this function attempts to change directory to $HOME.
+*
+* Return Value:
+*     @return bool: 1 if the working directory is changed, else 0.
+*------------------------------------------------------------------------------
+*/
 int cd(char *path) {
     char *dir;
 
@@ -307,6 +438,15 @@ int cd(char *path) {
     return 0;
 }
 
+/*
+*------------------------------------------------------------------------------
+* Function: status()
+*
+* Description:
+* status() is used for printing out the status for the last command executed in
+* the foreground that has completed.
+*------------------------------------------------------------------------------
+*/
 void status() {
     printf("Last command exit status %d\n", last_cmd_exit_status);
     fflush(stdout);
@@ -315,13 +455,29 @@ void status() {
 // }}}
 // Signal Handlers {{{
 
+/*
+*------------------------------------------------------------------------------
+* Function: initialize_signal_handlers()
+*
+* Description:
+* initialize_signal_handlers() is used for setting up the default action for
+* signal handlers used by the shell. Default action for smallsh means:
+*
+* CTRL-C (AKA SIGINT)
+* - The parent process and any processes running in the background ignore
+*   SIGINT
+* - A child process running in the foreground terminates itself upon receiving
+*   SIGINT.
+*
+* CTRL-Z (AKA SIGTSTP)
+* - A child process running in the foreground ignores SIGTSTP.
+* - A child process running in the background ignores SIGTSTP.
+* - The parent process running the shell toggles between normal mode and
+*   "foreground only mode" whereby new processes can no longer be run in the
+*   background.
+*------------------------------------------------------------------------------
+*/
 void initialize_signal_handlers() {
-    /*
-    * Parent process and background child processes ignore SIGINT. Only a child
-    * process executing in the foreground will respond to SIGINT. This signal
-    * is turned on (elsewhere) in the child process.
-    */
-
     // handle ctrl-c------------------------------------------------------------
     sa_sigint.sa_handler = SIG_IGN;     // ignore ctrl-c
     sa_sigint.sa_flags = 0;
@@ -362,9 +518,10 @@ static void handle_SIGTSTP(int sig_num) {
     }
 }
 
+// TODO fix this
 static void print_signal_status(int pid, int status) {
     if (WIFSIGNALED(status)) {
-        printf("%d killed by signal %d %s\n",
+        printf("process %d terminated by signal %d. %s\n",
             pid,
             WTERMSIG(status),
             strsignal(WTERMSIG(status))
