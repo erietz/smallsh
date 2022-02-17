@@ -14,7 +14,7 @@ will
 
 - [x] Provide a prompt for running commands
 - [x] Handle blank lines and comments, which are lines beginning with the
-  # character
+  `#` character
 - [x] Provide expansion for the variable `$$`
 - [x] Execute 3 commands exit, cd, and status via code built into the shell
 - [x] Execute other commands by creating new processes using a function from
