@@ -26,5 +26,9 @@ int main() {
     run_execute_tests();
 
     print_statistics(&test_statistics);
+
+    if (test_statistics.failed != 0)
+        return 1;
+
     return 0;
 }
